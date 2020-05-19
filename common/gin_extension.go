@@ -210,6 +210,8 @@ var mWhitePathMap = map[string]Empty{
 	"/admin/login":        empty,
 	"/wechat/wx_callback": empty,
 	"/test/ping":          empty,
+	"/debug/pprof/":        empty,
+	"/debug/pprof/allocs": empty,
 }
 
 func isInPathWhiteList(path string) bool {

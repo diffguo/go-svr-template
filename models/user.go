@@ -1,8 +1,8 @@
 package models
 
 import (
-	"go-svr-template/common/log"
 	"github.com/jinzhu/gorm"
+	"go-svr-template/common/log"
 	"time"
 )
 

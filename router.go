@@ -2,10 +2,14 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"go-svr-template/common"
 	"go-svr-template/views"
 )
 
 func addRoute(router *gin.Engine) {
+
+	common.AddPProfHandler(router)
+
 	test := router.Group("/test")
 	{
 		test.GET("/ping", views.PingPong)
