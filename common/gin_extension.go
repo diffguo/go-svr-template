@@ -209,12 +209,23 @@ var mWhitePathMap = map[string]Empty{
 	"/wx/wx_login":        empty,
 	"/admin/login":        empty,
 	"/wechat/wx_callback": empty,
-	"/test/ping":          empty,
-	"/debug/pprof/":        empty,
-	"/debug/pprof/allocs": empty,
+	"/test/*":             empty,
+	"/debug/pprof/*":      empty,
 }
 
+var mWhitePathMapLen = len(mWhitePathMap)
+
 func isInPathWhiteList(path string) bool {
+	for k, _ := range mWhitePathMap {
+		if k[len(k)-1] == '*' {
+			// 进行前缀匹配
+			if strings.HasPrefix(path, k[0:len(k)-1]) {
+				return true
+			}
+		} else if k == path {
+			return true
+		}
+	}
 	_, ok := mWhitePathMap[path]
 	return ok
 }
