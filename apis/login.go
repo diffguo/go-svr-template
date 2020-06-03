@@ -3,7 +3,6 @@ package apis
 import (
 	"github.com/gin-gonic/gin"
 	"go-svr-template/common"
-	"go-svr-template/common/log"
 	"go-svr-template/controller"
 	"go-svr-template/models"
 )
@@ -24,10 +23,9 @@ func ApiLogin(c *gin.Context) {
 	}
 
 	var is InputStructure
-	err := c.Bind(&is)
-	if err != nil {
-		log.Errorf("bind err: %s", err.Error())
-		common.SendResponse(c, common.STATUS_ERROR, err.Error(), "")
+	ok := common.Bind(c, &is)
+	if !ok {
+		common.SendResponse(c, common.STATUS_ERROR, "param err", "")
 		return
 	}
 

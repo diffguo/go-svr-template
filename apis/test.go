@@ -19,17 +19,16 @@ import (
 // @Router /test/ping [get]
 func PingPong(c *gin.Context)  {
 	type InputStructure struct {
-		Content string `form:"content"`
+		Content string `form:"content" binding:"required"`
 	}
 
-	ts := InputStructure{}
-	err := c.Bind(&ts)
-	if err != nil {
-		log.Errorf("bind err: %d", err.Error())
-		common.SendResponse(c, common.STATUS_ERROR, "bind err", "")
+	var is InputStructure
+	ok := common.Bind(c, &is)
+	if !ok {
+		common.SendResponse(c, common.STATUS_ERROR, "param err", "")
 		return
 	}
 
-	log.Infof("PingPong: %+v", ts)
-	common.SendResponse(c, common.STATUS_OK, "pong", ts.Content)
+	log.Infof("PingPong: %+v", is)
+	common.SendResponse(c, common.STATUS_OK, "pong", is.Content)
 }

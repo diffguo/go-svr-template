@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"go-svr-template/common/log"
 	"io/ioutil"
 	"net/http"
@@ -276,5 +277,27 @@ func Cors() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusNoContent)
 		}
 		c.Next()
+	}
+}
+
+func Bind(c *gin.Context, obj interface{}) bool {
+	err := c.Bind(obj)
+	if err != nil {
+		// this check is only needed when your code could produce
+		// an invalid value for validation such as interface with nil
+		// value most including myself do not usually have code like this.
+		// validator 参考： https://github.com/go-playground/validator
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			log.Errorf("bind err. InvalidValidationError: %s", err.Error())
+			return false
+		}
+
+		for _, err := range err.(validator.ValidationErrors) {
+			log.Errorf("bind err. ValidationError. StructField: %s, Tag: %s %s, Type: %+v, Value: %+v", err.StructNamespace(), err.ActualTag(), err.Param(), err.Type(), err.Value())
+		}
+
+		return false
+	} else {
+		return true
 	}
 }

@@ -150,7 +150,13 @@ func main() {
 	GWaitGroup = sync.WaitGroup{}
 	GWaitGroup.Add(1)
 
-	httpSvr = &http.Server{Addr: Config.Listen, Handler: router}
+	httpSvr = &http.Server{Addr: Config.Listen,
+		Handler:        router,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
 	err = httpSvr.ListenAndServe()
 	if err != nil {
 		log.Errorf("%s", err.Error())
@@ -159,10 +165,11 @@ func main() {
 	GWaitGroup.Wait()
 }
 
+// 优雅退出，以后可以考虑优雅重启
 func HandleSignal(signals ...os.Signal) {
 	sig := make(chan os.Signal, 1)
 	if len(signals) == 0 {
-		signals = append(signals, syscall.SIGTERM)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
 	}
 
 	signal.Notify(sig, signals...)
