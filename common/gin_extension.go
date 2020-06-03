@@ -211,6 +211,7 @@ var mWhitePathMap = map[string]Empty{
 	"/wechat/wx_callback": empty,
 	"/test/*":             empty,
 	"/debug/pprof/*":      empty,
+	"/swagger/*":          empty,
 }
 
 var mWhitePathMapLen = len(mWhitePathMap)

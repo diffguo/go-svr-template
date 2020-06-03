@@ -1,4 +1,4 @@
-package views
+package apis
 
 import (
 	"github.com/gin-gonic/gin"
@@ -26,8 +26,8 @@ func ApiLogin(c *gin.Context) {
 	var is InputStructure
 	err := c.Bind(&is)
 	if err != nil {
-		log.Errorf("miss code")
-		common.SendResponse(c, common.STATUS_ERROR, "miss code", "")
+		log.Errorf("bind err: %s", err.Error())
+		common.SendResponse(c, common.STATUS_ERROR, err.Error(), "")
 		return
 	}
 

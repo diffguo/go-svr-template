@@ -1,3 +1,25 @@
+// @title Swagger go-svr-template API
+// @version 1.0
+// @description This is a sample server celler server.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
+// @query.collection.format multi
+
+// @securityDefinitions.basic BasicAuth
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
 package main
 
 import (
@@ -5,10 +27,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go-svr-template/apis"
 	"go-svr-template/common"
 	"go-svr-template/common/log"
+	"go-svr-template/docs"
 	"go-svr-template/models"
-	"go-svr-template/views"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,6 +81,15 @@ func initDB(env string) error {
 	return nil
 }
 
+func swaggerInfo() {
+	docs.SwaggerInfo.Title = SERVERNAME + " API"
+	docs.SwaggerInfo.Description = "请使用前全局替换go-svr-template，以及更换SERVERNAME"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "petstore.swagger.io"
+	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+}
+
 var httpSvr *http.Server
 var ServerRunning = true
 
@@ -66,6 +98,8 @@ func main() {
 	if env == "" {
 		env = "online"
 	}
+
+	swaggerInfo()
 
 	env = strings.ToLower(env)
 	fmt.Printf("Start %s In %s Env\n", SERVERNAME, env)
@@ -90,7 +124,7 @@ func main() {
 
 	//启动用户订阅号
 	go func() {
-		views.InitUserWeChat()
+		apis.InitUserWeChat()
 	}()
 
 	if CheckAndExecCmd() {
@@ -144,4 +178,3 @@ func HandleSignal(signals ...os.Signal) {
 
 	log.Infof("gin: bye!")
 }
-

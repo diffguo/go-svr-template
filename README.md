@@ -1,4 +1,10 @@
-server template
+go swagger:
+https://github.com/swaggo/swag/blob/master/README_zh-CN.md
 
-下一步实现go swagger
-更新goid的实现：使用伪goid  https://studygolang.com/articles/22066
+后续：
+
+start project 命令
+
+优雅退出
+
+validator demo
