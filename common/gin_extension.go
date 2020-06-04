@@ -106,6 +106,23 @@ func SendResponse(c *gin.Context, status string, desc string, data interface{}) 
 	}
 }
 
+func SendResponseWithCode(c *gin.Context, code int32, status string, desc string, data interface{}) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	resp := CommonResHead{
+		Status:  status,
+		Code:    code,
+		Desc:    desc,
+		Content: data,
+	}
+
+	b, err := json.Marshal(&resp)
+	if err != nil {
+		log.Error(err.Error())
+	} else {
+		c.Writer.Write(b)
+	}
+}
+
 func SendResponseWithHttpStatus(c *gin.Context, status string, desc string, data interface{}, httpStatus int) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	resp := CommonResHead{

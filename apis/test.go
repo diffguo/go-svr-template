@@ -12,10 +12,10 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param content path string false "ping pong content"
-// @Success 200 {object} common.CommonResHead
-// @Failure 400 {object} common.CommonResHead
-// @Failure 404 {object} common.CommonResHead
-// @Failure 500 {object} common.CommonResHead
+// @Success 200 {object} common.CommonRspHead
+// @Failure 400 {object} common.CommonRspHead
+// @Failure 404 {object} common.CommonRspHead
+// @Failure 500 {object} common.CommonRspHead
 // @Router /test/ping [get]
 func PingPong(c *gin.Context)  {
 	type InputStructure struct {
