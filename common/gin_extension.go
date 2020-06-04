@@ -91,19 +91,7 @@ type CommonResHead struct {
 // status: OK 和 非OK， 非OK的情况下，请把描述填到Desc字段中
 // 以后可以转调用SendResponseWithHttpStatus
 func SendResponse(c *gin.Context, status string, desc string, data interface{}) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	resp := CommonResHead{
-		Status:  status,
-		Desc:    desc,
-		Content: data,
-	}
-
-	b, err := json.Marshal(&resp)
-	if err != nil {
-		log.Error(err.Error())
-	} else {
-		c.Writer.Write(b)
-	}
+	SendResponseWithCode(c, 0, status, desc, data)
 }
 
 func SendResponseWithCode(c *gin.Context, code int32, status string, desc string, data interface{}) {
