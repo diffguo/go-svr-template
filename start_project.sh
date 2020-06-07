@@ -36,7 +36,7 @@ mkdir "$ProjectPath"
 echo "start copy src to $ProjectPath"
 rsync -av --exclude $ProjectPath --exclude .git --exclude .gitignore --exclude .idea --exclude .DS_Store --exclude go-svr-template ./ $ProjectPath
 cd $ProjectPath
-rm -rf start_project.sh $ProjectName go.mod go.sum ./log/*
+rm -rf start_project.sh $ProjectName go.mod go.sum ./log/* dev.sh
 go mod init $ProjectName
 sed -i "" "s/go-svr-template/$ProjectName/g" `grep go-svr-template -rl .`
 sed -i "" "s/TemplateServer/$ProjectName/g" `grep TemplateServer -rl .`
