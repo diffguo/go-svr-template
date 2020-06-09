@@ -81,7 +81,7 @@ const (
 	STATUS_ERROR string = "ERROR"
 )
 
-type CommonResHead struct {
+type CommonRspHead struct {
 	Status  string      `json:"status"`
 	Code    int32       `json:"code"`
 	Desc    string      `json:"desc"`
@@ -96,7 +96,7 @@ func SendResponse(c *gin.Context, status string, desc string, data interface{}) 
 
 func SendResponseWithCode(c *gin.Context, code int32, status string, desc string, data interface{}) {
 	c.Writer.Header().Set("Content-Type", "application/json")
-	resp := CommonResHead{
+	resp := CommonRspHead{
 		Status:  status,
 		Code:    code,
 		Desc:    desc,
@@ -113,7 +113,7 @@ func SendResponseWithCode(c *gin.Context, code int32, status string, desc string
 
 func SendResponseWithHttpStatus(c *gin.Context, status string, desc string, data interface{}, httpStatus int) {
 	c.Writer.Header().Set("Content-Type", "application/json")
-	resp := CommonResHead{
+	resp := CommonRspHead{
 		Status:  status,
 		Desc:    desc,
 		Content: data,
