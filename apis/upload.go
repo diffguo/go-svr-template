@@ -23,7 +23,7 @@ func ApiUploadAvatar(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		log.Errorf("read body err: %s", err.Error())
-		common.SendResponse(c, common.STATUS_ERROR, "上传失败，读取上传数据失败!", "")
+		common.SendResponseImp(c, "", common.ErrCodeParamErr, "上传失败，读取上传数据失败!")
 		return
 	}
 
@@ -32,8 +32,8 @@ func ApiUploadAvatar(c *gin.Context) {
 
 	success := tools.UploadToTWNoExpireOss(resourcePath, contentType, file)
 	if success {
-		common.SendResponse(c, common.STATUS_OK, "", fmt.Sprintf("%s/%s", CDNUrl, resourcePath))
+		common.SendSimpleResponse(c, fmt.Sprintf("%s/%s", CDNUrl, resourcePath))
 	} else {
-		common.SendResponse(c, common.STATUS_ERROR, "上传失败，请重试", "")
+		common.SendResponseImp(c, "", common.ErrCodeLogicErr, "上传到OSS失败，请重试")
 	}
 }

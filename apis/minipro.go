@@ -21,7 +21,7 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 	upWX, err := models.GetUserWXWithUserId(nil, userId)
 	if err != nil {
 		log.Errorf("cant get user profile: %d", userId)
-		common.SendResponse(c, common.STATUS_ERROR, "cant get user profile", "")
+		common.SendResponse(c, "", common.ErrCodeDBErr)
 		return
 	}
 
@@ -34,7 +34,7 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 	err = c.Bind(&ts)
 	if err != nil || ts.EncryptedData == "" || ts.Iv == "" {
 		log.Errorf("miss param: %+v, userId: %d", ts, userId)
-		common.SendResponse(c, common.STATUS_ERROR, "miss param", "")
+		common.SendResponse(c, "", common.ErrCodeParamErr)
 		return
 	}
 
@@ -46,14 +46,14 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 		mobileNumber := result.(map[string]interface{})["purePhoneNumber"].(string)
 		if err = models.UpdateUserByUserId(nil, userId, map[string]interface{}{"mobile_number": mobileNumber, "mobile_verified": 1, "mobile_verify_time": time.Now()}); err != nil {
 			log.Errorf("UpdateUserByUserId Err: %s, userId: %d", err.Error(), userId)
-			common.SendResponse(c, common.STATUS_ERROR, "数据库错误，请扫后再试", "")
+			common.SendResponse(c, "", common.ErrCodeDBErr)
 			return
 		} else {
-			common.SendResponse(c, common.STATUS_OK, "", mobileNumber)
+			common.SendSimpleResponse(c, mobileNumber)
 		}
 	} else {
 		log.Errorf("PhoneNumber decode Err: %s, userId: %d", err.Error(), userId)
-		common.SendResponse(c, common.STATUS_ERROR, "PhoneNumber decode Err", "wxlogin")
+		common.SendResponseImp(c, "", common.ErrCodeLogicErr, "PhoneNumber decode Err")
 	}
 }
 

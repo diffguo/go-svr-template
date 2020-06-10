@@ -3,6 +3,7 @@ package apis
 import (
 	"github.com/gin-gonic/gin"
 	"go-svr-template/common"
+	"go-svr-template/common/log"
 	"go-svr-template/controller"
 	"go-svr-template/models"
 )
@@ -12,7 +13,7 @@ func ApiCheckAuth(c *gin.Context) {
 	if err != nil {
 		return
 	} else {
-		common.SendResponse(c, common.STATUS_OK, "", "")
+		common.SendResponse(c, "", common.ErrCodeParamErr)
 	}
 }
 
@@ -25,21 +26,23 @@ func ApiLogin(c *gin.Context) {
 	var is InputStructure
 	ok := common.Bind(c, &is)
 	if !ok {
-		common.SendResponse(c, common.STATUS_ERROR, "param err", "")
+		common.SendResponse(c, "", common.ErrCodeParamErr)
 		return
 	}
 
 	passWord := controller.Hmac4Password(is.PassWord)
 	up, err := models.GetUserByPassword(nil, is.MobileNumber, passWord)
 	if err != nil {
-		common.SendResponse(c, common.STATUS_ERROR, err.Error(), "")
+		log.Errorf("db err: %s", err.Error())
+		common.SendResponse(c, "", common.ErrCodeDBErr)
 		return
 	}
 
 	err = common.GenAuth(c, up.ID)
 	if err != nil {
-		common.SendResponse(c, common.STATUS_ERROR, err.Error(), "")
+		common.SendResponseImp(c, "", common.ErrCodeLogicErr, "GenAuth Error")
 		return
 	}
-	common.SendResponse(c, common.STATUS_OK, "", up)
+
+	common.SendSimpleResponse(c, up)
 }

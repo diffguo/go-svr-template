@@ -34,7 +34,7 @@ func GetSelfUserId(c *gin.Context) (int64, error) {
 	defer func() {
 		if err != nil || userId == 0 {
 			log.Errorf("cant get userId: %s", err.Error())
-			common.SendResponse(c, common.STATUS_ERROR, err.Error(), "")
+			common.SendResponseImp(c, "", common.ErrCodeParamErr, "Get User Id err")
 		}
 	}()
 

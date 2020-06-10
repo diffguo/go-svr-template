@@ -25,10 +25,10 @@ func PingPong(c *gin.Context)  {
 	var is InputStructure
 	ok := common.Bind(c, &is)
 	if !ok {
-		common.SendResponse(c, common.STATUS_ERROR, "param err", "")
+		common.SendResponse(c, "", common.ErrCodeParamErr)
 		return
 	}
 
 	log.Infof("PingPong: %+v", is)
-	common.SendResponse(c, common.STATUS_OK, "pong", is.Content)
+	common.SendSimpleResponse(c, is.Content)
 }

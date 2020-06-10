@@ -16,7 +16,7 @@ func GetUser(c *gin.Context) *models.User {
 	user, err := models.GetUserByUserId(nil, userId)
 	if err != nil {
 		log.Error("Get User By Id err: %s, userId: %d", err.Error(), userId)
-		common.SendResponse(c, common.STATUS_ERROR, err.Error(), "")
+		common.SendResponseImp(c, "", common.ErrCodeDBErr, "GetUserByUserId err")
 		return nil
 	}
 

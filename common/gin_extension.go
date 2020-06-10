@@ -16,6 +16,8 @@ import (
 
 var AuthAes = NewAesCbcPKCS7("XGYUZj78QvlvyHQ1eKeSeNhCJcJRQOyQ")
 
+const TraceIDName = "traceId"
+
 func GinLogger(threshold time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Start timer
@@ -76,50 +78,41 @@ func getRequestData(c *gin.Context) string {
 	}
 }
 
-const (
-	STATUS_OK    string = "SUCCESS"
-	STATUS_ERROR string = "ERROR"
-)
-
-type CommonRspHead struct {
-	Status  string      `json:"status"`
-	Code    int32       `json:"code"`
-	Desc    string      `json:"desc"`
+type ResponseHead struct {
+	ErrCode int         `json:"err_code"` // 0为正常返回，其它为异常，异常时ErrDesc为异常描述。 固定的异常描述请存储于err_code_def.go文件中
+	ErrDesc string      `json:"err_desc"`
 	Content interface{} `json:"content"`
+	TraceId string      `json:"trace_id"` // 用于定位某次调用的ID，客户端应该在错误时显示(ErrCode:TraceId)
 }
 
-// status: OK 和 非OK， 非OK的情况下，请把描述填到Desc字段中
-// 以后可以转调用SendResponseWithHttpStatus
-func SendResponse(c *gin.Context, status string, desc string, data interface{}) {
-	SendResponseWithCode(c, 0, status, desc, data)
+func SendSimpleResponse(c *gin.Context, content interface{}) {
+	SendResponseImp(c, content, 0, "")
 }
 
-func SendResponseWithCode(c *gin.Context, code int32, status string, desc string, data interface{}) {
+func SendResponse(c *gin.Context, content interface{}, errCode int) {
+	if errCode == 0 {
+		SendResponseImp(c, content, 0, "")
+		return
+	}
+
+	if errCode >= ErrCodeParamErr {
+		SendResponseImp(c, content, errCode, MapErrCode2Desc[errCode])
+		return
+	}
+
+	SendResponseImp(c, content, errCode, "")
+}
+
+func SendResponseImp(c *gin.Context, content interface{}, errCode int, errDesc string) {
 	c.Writer.Header().Set("Content-Type", "application/json")
-	resp := CommonRspHead{
-		Status:  status,
-		Code:    code,
-		Desc:    desc,
-		Content: data,
+	resp := ResponseHead{
+		ErrCode: errCode,
+		ErrDesc: errDesc,
+		Content: content,
+		TraceId: c.GetHeader(TraceIDName),
 	}
 
-	b, err := json.Marshal(&resp)
-	if err != nil {
-		log.Error(err.Error())
-	} else {
-		c.Writer.Write(b)
-	}
-}
-
-func SendResponseWithHttpStatus(c *gin.Context, status string, desc string, data interface{}, httpStatus int) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	resp := CommonRspHead{
-		Status:  status,
-		Desc:    desc,
-		Content: data,
-	}
-
-	c.JSON(httpStatus, resp)
+	c.JSON(http.StatusOK, resp)
 }
 
 type UserAgent struct {
@@ -140,7 +133,7 @@ func CheckAuth() gin.HandlerFunc {
 		ua := c.GetHeader("UserAgent")
 		if ua == "" {
 			log.Warnf("No UserAgent in the req: %+v", c.Request.Header)
-			SendResponseWithHttpStatus(c, STATUS_ERROR, "No UserAgent", "", http.StatusUnauthorized)
+			SendResponseImp(c, "", http.StatusUnauthorized, "No UserAgent in the req")
 			c.Abort()
 			return
 		}
@@ -149,7 +142,7 @@ func CheckAuth() gin.HandlerFunc {
 		err := json.Unmarshal([]byte(ua), &userAgent)
 		if err != nil {
 			log.Errorf("Unmarshal UserAgent Fail: %s %s", ua, err.Error())
-			SendResponseWithHttpStatus(c, STATUS_ERROR, "Error UserAgent", "", http.StatusUnauthorized)
+			SendResponseImp(c, "", http.StatusUnauthorized, "Error UserAgent")
 			c.Abort()
 			return
 		}
@@ -158,7 +151,7 @@ func CheckAuth() gin.HandlerFunc {
 		tokenPlaintext, err := AuthAes.Decrypt(authToken)
 		if err != nil {
 			log.Errorf("Decrypt Authorization error : %s %s", authToken, err.Error())
-			SendResponseWithHttpStatus(c, STATUS_ERROR, "Wrong Authorization", "", http.StatusUnauthorized)
+			SendResponseImp(c, "", http.StatusUnauthorized, "Wrong Authorization")
 			c.Abort()
 			return
 		}
@@ -166,14 +159,14 @@ func CheckAuth() gin.HandlerFunc {
 		items := strings.Split(tokenPlaintext, "|")
 		if len(items) != 5 {
 			log.Errorf("Wrong1 Authorization: %s", tokenPlaintext)
-			SendResponseWithHttpStatus(c, STATUS_ERROR, "Wrong Authorization", "", http.StatusUnauthorized)
+			SendResponseImp(c, "", http.StatusUnauthorized, "Wrong1 Authorization")
 			c.Abort()
 			return
 		}
 
 		if items[0] != userAgent.AppVersion || items[1] != userAgent.MobileSystem || items[2] != userAgent.MobileDeviceBrand {
 			log.Errorf("Wrong2 Authorization: %+v", userAgent)
-			SendResponseWithHttpStatus(c, STATUS_ERROR, "Wrong Authorization", "", http.StatusUnauthorized)
+			SendResponseImp(c, "", http.StatusUnauthorized, "Wrong2 Authorization")
 			c.Abort()
 			return
 		}
@@ -188,7 +181,7 @@ func CheckAuth() gin.HandlerFunc {
 
 		tokenTime := time.Unix(timeStamp, 0)
 		if tokenTime.Add(time.Duration(time.Hour * 6)).Before(time.Now()) {
-			SendResponseWithHttpStatus(c, STATUS_ERROR, "Wrong Authorization", "", http.StatusUnauthorized)
+			SendResponseImp(c, "", http.StatusUnauthorized, "Wrong Authorization, timeout")
 			log.Infof("token timeout. token time: %d", timeStamp)
 			c.Abort()
 			return
@@ -196,7 +189,7 @@ func CheckAuth() gin.HandlerFunc {
 
 		userId, err := strconv.ParseInt(items[4], 10, 64)
 		if err != nil {
-			SendResponseWithHttpStatus(c, STATUS_ERROR, "Wrong Authorization", "", http.StatusUnauthorized)
+			SendResponseImp(c, "", http.StatusUnauthorized, "Wrong Authorization, Parse userId err")
 			log.Error("token wrong userId")
 			c.Abort()
 			return
