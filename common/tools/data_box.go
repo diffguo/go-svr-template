@@ -33,16 +33,24 @@ for _, t := range objs {
 
 使用DataBox后的方式是：
 
-err := NewDataBox(dataSlice).KeyField("ID").JoinByMap(func(keywords interface{}) interface{} {
-		members := make(map[int64]Obj) // Obj不能是指针
-		ids := keywords.([]int64)
-		// 一次性从数据库中得到所有的Mobjs
-		for _, id := range ids {
-			members[id] = MObj{....}
-		}
+		err := tools.NewDataBox(orders).KeyField("GroupOrderId").JoinByMap(func(keywords interface{}) interface{} {
+			mGroupOrder := make(map[int64]*models.GroupOrder)
+			GroupOrderIds := keywords.([]int64)
+			// 一次性从数据库中得到所有的Mobjs
+			if len(GroupOrderIds) > 0 {
+				groupOrders, err := models.GetGroupOrdersByIds(GroupOrderIds)
+				if err != nil {
+					log.Errorf("GetGroupOrdersByIds err: %s", err.Error())
+					return mGroupOrder
+				}
 
-		return members
-	}).SaveToField("Member")
+				for _, groupOrder := range groupOrders {
+					mGroupOrder[groupOrder.ID] = &groupOrder
+				}
+			}
+
+			return mGroupOrder
+		}).SaveToField("GroupOrderInfo")
 //
 */
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -298,6 +306,8 @@ func (d *DataBox) SaveToField(fieldName string) error {
 		if isNeedConvertWhenElemTypeNotEquelInSlice {
 			retObjValue = convertSlice(iter.Value(), dsttype)
 		}
+
+		fmt.Println(retObjValue.Type())
 
 		// 把value放入saveElem slice中对象的fieldName处
 		for i := 0; i < saveElemSlice.Len(); i++ {

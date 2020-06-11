@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"go-svr-template/common/goroutineid"
+	"go-svr-template/common/trace_id"
 	"log"
 	"os"
 	"strings"
@@ -114,53 +115,53 @@ func InitLog(logDir string, logFile string, logStrLevel string) (*SimpleLog, err
 
 func (slog *SimpleLog) Debug(v ...interface{}) {
 	if slog.LogLevel == LogLevelDebug {
-		slog.Log.Output(3, fmt.Sprintf("[DEBUG][%d] %s", goroutineid.GetGoID(), fmt.Sprint(v...)))
+		slog.Log.Output(3, fmt.Sprintf("[DEBUG][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
 	}
 }
 
 func (slog *SimpleLog) Debugf(format string, args ...interface{}) {
 	if slog.LogLevel == LogLevelDebug {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[DEBUG][%d] %s", goroutineid.GetGoID(), msg))
+		slog.Log.Output(3, fmt.Sprintf("[DEBUG][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
 	}
 }
 
 func (slog *SimpleLog) Info(v ...interface{}) {
 	if slog.LogLevel >= LogLevelInfo {
-		slog.Log.Output(3, fmt.Sprintf("[INFO][%d] %s", goroutineid.GetGoID(), fmt.Sprint(v...)))
+		slog.Log.Output(3, fmt.Sprintf("[INFO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
 	}
 }
 
 func (slog *SimpleLog) Infof(format string, args ...interface{}) {
 	if slog.LogLevel >= LogLevelInfo {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[INFO][%d] %s", goroutineid.GetGoID(), msg))
+		slog.Log.Output(3, fmt.Sprintf("[INFO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
 	}
 }
 
 func (slog *SimpleLog) Warn(v ...interface{}) {
 	if slog.LogLevel >= LogLevelWarn {
-		slog.Log.Output(3, fmt.Sprintf("[WARN][%d] %s", goroutineid.GetGoID(), fmt.Sprint(v...)))
+		slog.Log.Output(3, fmt.Sprintf("[WARN][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
 	}
 }
 
 func (slog *SimpleLog) Warnf(format string, args ...interface{}) {
 	if slog.LogLevel >= LogLevelWarn {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[WARN][%d] %s", goroutineid.GetGoID(), msg))
+		slog.Log.Output(3, fmt.Sprintf("[WARN][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
 	}
 }
 
 func (slog *SimpleLog) Error(v ...interface{}) {
 	if slog.LogLevel >= LogLevelError {
-		slog.Log.Output(3, fmt.Sprintf("[ERRO][%d] %s", goroutineid.GetGoID(), fmt.Sprint(v...)))
+		slog.Log.Output(3, fmt.Sprintf("[ERRO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
 	}
 }
 
 func (slog *SimpleLog) Errorf(format string, args ...interface{}) {
 	if slog.LogLevel >= LogLevelError {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[ERRO][%d] %s", goroutineid.GetGoID(), msg))
+		slog.Log.Output(3, fmt.Sprintf("[ERRO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go-svr-template/common/log"
+	"go-svr-template/common/trace_id"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -16,10 +17,10 @@ import (
 
 var AuthAes = NewAesCbcPKCS7("XGYUZj78QvlvyHQ1eKeSeNhCJcJRQOyQ")
 
-const TraceIDName = "traceId"
-
 func GinLogger(threshold time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		trace_id.SaveTraceId(c.GetHeader(trace_id.TraceIDName))
+
 		// Start timer
 		start := time.Now()
 
@@ -109,10 +110,16 @@ func SendResponseImp(c *gin.Context, content interface{}, errCode int, errDesc s
 		ErrCode: errCode,
 		ErrDesc: errDesc,
 		Content: content,
-		TraceId: c.GetHeader(TraceIDName),
+		TraceId: trace_id.GetTraceId(),
 	}
 
-	c.JSON(http.StatusOK, resp)
+	b, err := json.Marshal(&resp)
+	if err != nil {
+		log.Error(err.Error())
+	} else {
+		c.Writer.Write(b)
+	}
+	//c.JSON(http.StatusOK, resp)
 }
 
 type UserAgent struct {
@@ -124,7 +131,7 @@ type UserAgent struct {
 
 func CheckAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if isInPathWhiteList(c.Request.URL.Path) {
+		if isPathInWhiteList(c.Request.URL.Path) {
 			// Process request
 			c.Next()
 			return
@@ -205,6 +212,7 @@ func CheckAuth() gin.HandlerFunc {
 }
 
 var mWhitePathMap = map[string]Empty{
+	"/favicon.ico":        empty,
 	"/wx/wx_login":        empty,
 	"/admin/login":        empty,
 	"/wechat/wx_callback": empty,
@@ -215,7 +223,7 @@ var mWhitePathMap = map[string]Empty{
 
 var mWhitePathMapLen = len(mWhitePathMap)
 
-func isInPathWhiteList(path string) bool {
+func isPathInWhiteList(path string) bool {
 	for k, _ := range mWhitePathMap {
 		if k[len(k)-1] == '*' {
 			// 进行前缀匹配
