@@ -2,11 +2,13 @@ package log
 
 import (
 	"fmt"
+	"github.com/chanxuehong/util/math"
 	"go-svr-template/common/goroutineid"
 	"go-svr-template/common/trace_id"
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 // 没有日志切割，切割任务丢给shell脚本
@@ -69,19 +71,29 @@ const (
 
 var GLog *SimpleLog
 
+const PrefixHeadLen = 48
+
 type SimpleLog struct {
-	LogLevel int
-	Log      *log.Logger
+	LogLevel     int
+	LogMaxSize   int
+	LogCurSize   int
+	FileFullName string
+	PFile        *os.File
+	Log          *log.Logger
 }
 
-func InitLog(logDir string, logFile string, logStrLevel string) (*SimpleLog, error) {
+func InitLog(logDir string, logFile string, logStrLevel string, LogMaxSize int) (*SimpleLog, error) {
+	if LogMaxSize == 0 {
+		LogMaxSize = 524288000
+	}
+
 	logStrLevel = strings.ToLower(logStrLevel)
 
 	if logStrLevel != "debug" && logStrLevel != "info" && logStrLevel != "warn" && logStrLevel != "error" {
 		return nil, fmt.Errorf("wrong log level")
 	}
 
-	simpleLog := SimpleLog{}
+	simpleLog := SimpleLog{LogMaxSize: LogMaxSize}
 
 	if logStrLevel == "debug" {
 		simpleLog.LogLevel = LogLevelDebug
@@ -99,69 +111,132 @@ func InitLog(logDir string, logFile string, logStrLevel string) (*SimpleLog, err
 		simpleLog.LogLevel = LogLevelError
 	}
 
-	filename := logDir + "/" + logFile
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	simpleLog.FileFullName = logDir + "/" + logFile
+
+	var err error
+	simpleLog.PFile, err = os.OpenFile(simpleLog.FileFullName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
 	}
 
-	simpleLog.Log = log.New(f, "", log.Ldate|log.Lmicroseconds|log.Lshortfile)
+	simpleLog.Log = log.New(simpleLog.PFile, "", log.Ldate|log.Lmicroseconds|log.Lshortfile)
 	if GLog == nil {
 		GLog = &simpleLog
 	}
 
+	ff, err := os.Stat(simpleLog.FileFullName)
+	if err != nil {
+		return nil, err
+	}
+
+	if ff.Size() > math.MaxInt {
+		simpleLog.LogCurSize = math.MaxInt
+	} else {
+		simpleLog.LogCurSize = int(ff.Size())
+	}
+
+	simpleLog.rotate()
 	return &simpleLog, nil
+}
+
+func (slog *SimpleLog) rotate() {
+	if slog.LogCurSize >= slog.LogMaxSize {
+		err := slog.PFile.Close()
+		if err != nil {
+			fmt.Printf("close log file err: %s\n", err.Error())
+			return
+		}
+
+		err = os.Rename(slog.FileFullName, slog.FileFullName+"."+time.Now().Format("15:04:05.999999999"))
+		if err != nil {
+			fmt.Printf("Rename log file err: %s\n", err.Error())
+			return
+		}
+
+		slog.PFile, err = os.OpenFile(slog.FileFullName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("OpenFile log file err: %s\n", err.Error())
+			return
+		}
+
+		slog.Log.SetOutput(slog.PFile)
+		slog.LogCurSize = 0
+	}
 }
 
 func (slog *SimpleLog) Debug(v ...interface{}) {
 	if slog.LogLevel == LogLevelDebug {
-		slog.Log.Output(3, fmt.Sprintf("[DEBUG][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
+		out := fmt.Sprintf("[DEBUG][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...))
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 
 func (slog *SimpleLog) Debugf(format string, args ...interface{}) {
 	if slog.LogLevel == LogLevelDebug {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[DEBUG][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
+		out := fmt.Sprintf("[DEBUG][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg)
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 
 func (slog *SimpleLog) Info(v ...interface{}) {
 	if slog.LogLevel >= LogLevelInfo {
-		slog.Log.Output(3, fmt.Sprintf("[INFO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
+		out := fmt.Sprintf("[INFO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...))
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 
 func (slog *SimpleLog) Infof(format string, args ...interface{}) {
 	if slog.LogLevel >= LogLevelInfo {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[INFO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
+		out := fmt.Sprintf("[INFO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg)
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 
 func (slog *SimpleLog) Warn(v ...interface{}) {
 	if slog.LogLevel >= LogLevelWarn {
-		slog.Log.Output(3, fmt.Sprintf("[WARN][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
+		out := fmt.Sprintf("[WARN][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...))
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 
 func (slog *SimpleLog) Warnf(format string, args ...interface{}) {
 	if slog.LogLevel >= LogLevelWarn {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[WARN][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
+		out := fmt.Sprintf("[WARN][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg)
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 
 func (slog *SimpleLog) Error(v ...interface{}) {
 	if slog.LogLevel >= LogLevelError {
-		slog.Log.Output(3, fmt.Sprintf("[ERRO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...)))
+		out := fmt.Sprintf("[ERRO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), fmt.Sprint(v...))
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 
 func (slog *SimpleLog) Errorf(format string, args ...interface{}) {
 	if slog.LogLevel >= LogLevelError {
 		msg := fmt.Sprintf(format, args...)
-		slog.Log.Output(3, fmt.Sprintf("[ERRO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg))
+		out := fmt.Sprintf("[ERRO][%d][%s] %s", goroutineid.GetGoID(), trace_id.GetTraceId(), msg)
+		slog.LogCurSize += PrefixHeadLen + len(out)
+		slog.Log.Output(3, out)
+		slog.rotate()
 	}
 }
 

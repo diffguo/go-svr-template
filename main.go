@@ -116,7 +116,7 @@ func main() {
 		return
 	}
 
-	_, err = log.InitLog(Config.LogSetting.LogDir, Config.LogSetting.LogFile, Config.LogSetting.LogLevel)
+	_, err = log.InitLog(Config.LogSetting.LogDir, Config.LogSetting.LogFile, Config.LogSetting.LogLevel, Config.LogSetting.LogSize)
 	if nil != err {
 		fmt.Println("initLog err :", err)
 		return

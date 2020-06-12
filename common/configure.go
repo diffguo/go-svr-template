@@ -20,6 +20,7 @@ type LogConfig struct {
 	LogDir   string
 	LogFile  string
 	LogLevel string
+	LogSize  int
 }
 
 type RedisConfig struct {
