@@ -41,8 +41,10 @@ func GinLogger(threshold time.Duration) gin.HandlerFunc {
 						log.Debugf("[GIN DEBUG] %s %s URL: %s Header: %+v Body err", c.Request.Method, c.Request.Proto,
 							c.Request.URL.String(), c.Request.Header)
 					}
+				} else {
+					log.Debugf("[GIN DEBUG] %s %s URL: %s Header: %+v Body err", c.Request.Method, c.Request.Proto,
+						c.Request.URL.String(), c.Request.Header)
 				}
-
 			}
 		}
 
