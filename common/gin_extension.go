@@ -21,6 +21,31 @@ func GinLogger(threshold time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		trace_id.SaveTraceId(c.GetHeader(trace_id.TraceIDName))
 
+		if log.GLog.LogLevel == log.LogLevelDebug {
+			if c.Request.Method == http.MethodGet {
+				log.Debugf("[GIN DEBUG] %s %s URL: %s Header: %+v", c.Request.Method, c.Request.Proto,
+					c.Request.URL.String(), c.Request.Header)
+			} else {
+				contentType := c.ContentType()
+				if contentType == gin.MIMEJSON || contentType == gin.MIMEHTML || contentType == gin.MIMEXML ||
+					contentType == gin.MIMEXML2 || contentType == gin.MIMEPlain || contentType == gin.MIMEPOSTForm ||
+					contentType == gin.MIMEMultipartPOSTForm {
+					body, _ := ioutil.ReadAll(c.Request.Body)
+					c.Request.Body = ioutil.NopCloser(bytes.NewReader(body))
+
+					if body != nil {
+						data, _ := ioutil.ReadAll(c.Request.Body)
+						log.Debugf("[GIN DEBUG] %s %s URL: %s Header: %+v Body: %s", c.Request.Method, c.Request.Proto,
+							c.Request.URL.String(), c.Request.Header, string(data))
+					} else {
+						log.Debugf("[GIN DEBUG] %s %s URL: %s Header: %+v Body err", c.Request.Method, c.Request.Proto,
+							c.Request.URL.String(), c.Request.Header)
+					}
+				}
+
+			}
+		}
+
 		// Start timer
 		start := time.Now()
 
