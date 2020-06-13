@@ -7,83 +7,72 @@ import (
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /*
-// 为了高效、便捷的为Slice中的对象结构中的成员进行赋值操作（待赋值的数据可能在数据库中），从而实现该方法
+// 为了高效、便捷的为Slice中的对象结构中的成员进行赋值操作（待赋值的数据可能在数据库中），从而实现该方法。
+// KeyField在slice中可以有重复
 //
 // 如有结构：
+
 type T struct {
-	ID int64
-	Name string
-	Member MObj
+	KeyId   int
+	TName   string
+	V       V
+	PV      *V
+	VSlice  []V
+	PVSlice []*V
 }
 
 生成了对应的Slice：objs := []T{T{...},T{...},T{...},....}
-需要填充其中成员的Member域的值，使用如下结构的对象：
-type MObj struct {
-	Id int
-	Name string
+需要填充其中成员的V 或 PV 或 VSlice 或 PVSlice域的值，使用如下结构的对象：
+type V struct {
+	Id    int
+	VName string
 }
-
-如果MObj的数据在数据库中，通常的做法是：
-for _, t := range objs {
-	1. fetch mobj from db by t.Id
-	2. t.Member = mobj
-}
-
-这样的缺点是数据库访问次数多，代码量大，不易维护。
 
 使用DataBox后的方式是：
 
-		err := tools.NewDataBox(orders).KeyField("GroupOrderId").JoinByMap(func(keywords interface{}) interface{} {
-			mGroupOrder := make(map[int64]*models.GroupOrder)
-			GroupOrderIds := keywords.([]int64)
-			// 一次性从数据库中得到所有的Mobjs
-			if len(GroupOrderIds) > 0 {
-				groupOrders, err := models.GetGroupOrdersByIds(GroupOrderIds)
-				if err != nil {
-					log.Errorf("GetGroupOrdersByIds err: %s", err.Error())
-					return mGroupOrder
-				}
+err := NewDataBox(objs).KeyField("KeyId").JoinByMap(func(keywords interface{}) interface{} {
+	retMap := make(map[int]*V)
 
-				for _, groupOrder := range groupOrders {
-					mGroupOrder[groupOrder.ID] = &groupOrder
-				}
-			}
+	// 一次性从数据库中得到所有的Mobjs
+	KeyIds := keywords.([]int)
+	if len(KeyIds) > 0 {
+		VSlice := []V{{Id: 1, VName: "n1"}, V{Id: 2, VName: "n2"}, V{Id: 3, VName: "n3"}} // get from db
+		for i, v := range VSlice {
+			retMap[v.Id] = &VSlice[i]
+		}
+	}
 
-			return mGroupOrder
-		}).SaveToField("GroupOrderInfo")
-//
+	return retMap
+}).SaveToField("V")
+
 */
 ///////////////////////////////////////////////////////////////////////////////////////
 
 type DataBox struct {
-	// 主数据, 为slice
-	data interface{}
+	// 主数据
+	sliceData interface{}
 
-	// 数据基本类型
-	dataValue reflect.Value
+	// sliceData的reflect.Value
+	sliceDataValue reflect.Value
 
-	// ptr type of the element in the data
+	// ptr type of sliceData中单个对象的数据类型
 	elemPtrType reflect.Type
 
-	// 主数据Map，主key(elemPtrType)指向主数据的成员。key为主数据Slice中的Element中的keyFieldName对应的值，Value为主数据Slice中的Element的引用
-	elemMap reflect.Value
+	// 主数据Map，key(keyField)指向相同keyField的elem的引用对象组成的slice
+	key2ElemSlice reflect.Value
 
-	// 关联Map，主key(elemPtrType)指向返回的数据对象
-	relatedMap reflect.Value
+	// JoinByMap的到的Map，主key(keyField)指向返回的数据对象
+	retMap reflect.Value
 
-	// 内部错误传递，用户不用关心该成员
+	// 内部错误传递，不用关心该成员
 	err error
 }
 
-// 用户需要实现的函数：通过key列表来获取对象
+// 用户需要实现的函数：通过key列表来获取对象，用于JoinByMap
 // key列表时data里面通过keyfield抽取的key列表
 // 第一个返回的map的key为传入的key；map里面的value可以是查到的单个对象，也可以是一个可以对应的对象slice
 // 与FetchObjsByKeysRetSliceFunc相比，性能更高，且子结构可以不带父对象的ID，缺点是需要多写点代码
 type FetchObjsByKeysRetMapFunc func(keyList interface{}) (key2ObjsMap interface{}) // map[key][]obj  or  map[key]obj  or map[key][]*obj  or  map[key]*obj
-
-// 第二个返回对象的切片
-// 与FetchObjsByKeysRetMapFunc相比，代码更简洁，但是子结构必须带父对象的ID，以便系统进行关联，缺点是：由于有内存拷贝，性能相对较差
-type FetchObjsByKeysRetSliceFunc func(keyList interface{}) (objList interface{}) // []obj or []*obj
 
 // 功能：生成NewDataBox对象，以便向data(必须是slice)中的成员(slice中的成员)添加指定数据，数据由FetchObjsByKeysRetMapFunc或者
 // FetchObjsByKeysRetSliceFunc返回slice中的对象和map中的value可以是结构或者是结构的指针
@@ -95,36 +84,36 @@ type FetchObjsByKeysRetSliceFunc func(keyList interface{}) (objList interface{})
 // 3. 被填充对象为指针，填充对象为结构对象 这种情况会导致异常
 func NewDataBox(data interface{}) *DataBox {
 	databox := &DataBox{}
-	databox.data = data
+	databox.sliceData = data
 	if data == nil {
 		databox.err = fmt.Errorf("Empty Input Data")
 		return databox
 	}
 
-	databox.dataValue = reflect.ValueOf(data)
-	if !databox.dataValue.IsValid() || databox.dataValue.IsNil() {
+	databox.sliceDataValue = reflect.ValueOf(data)
+	if !databox.sliceDataValue.IsValid() || databox.sliceDataValue.IsNil() {
 		databox.err = fmt.Errorf("Wrong Input Data Format")
 		return databox
 	}
 
-	if databox.dataValue.Kind() == reflect.Ptr {
-		databox.dataValue = databox.dataValue.Elem()
-		databox.data = databox.dataValue.Interface()
+	if databox.sliceDataValue.Kind() == reflect.Ptr {
+		databox.sliceDataValue = databox.sliceDataValue.Elem()
+		databox.sliceData = databox.sliceDataValue.Interface()
 	}
 
-	var elemOriginalType reflect.Type
-	if databox.dataValue.Kind() == reflect.Slice || databox.dataValue.Kind() == reflect.Map { // 如果是slice类型, 取出实体类型
-		elemOriginalType = databox.dataValue.Type().Elem()
+	var elemType reflect.Type
+	if databox.sliceDataValue.Kind() == reflect.Slice { // 如果是slice类型, 取出实体类型
+		elemType = databox.sliceDataValue.Type().Elem()
 	} else {
 		databox.err = fmt.Errorf("Wrong Input Data's Type. Only Should Be Slice Or Map")
 		return databox
 	}
 
 	// 确认真实类型
-	if elemOriginalType.Kind() == reflect.Ptr {
-		databox.elemPtrType = elemOriginalType
+	if elemType.Kind() == reflect.Ptr {
+		databox.elemPtrType = elemType
 	} else {
-		databox.elemPtrType = reflect.PtrTo(elemOriginalType)
+		databox.elemPtrType = reflect.PtrTo(elemType)
 	}
 
 	if databox.elemPtrType.Elem().Kind() != reflect.Struct {
@@ -146,15 +135,15 @@ func (d *DataBox) KeyField(keyFieldName string) *DataBox {
 		return d
 	}
 
-	d.elemMap = reflect.MakeMap(reflect.MapOf(structField.Type, reflect.SliceOf(d.elemPtrType)))
+	d.key2ElemSlice = reflect.MakeMap(reflect.MapOf(structField.Type, reflect.SliceOf(d.elemPtrType)))
 
 	//将原始数据, 整理进中间的比较字典
-	for i := 0; i < d.dataValue.Len(); i++ {
-		item := d.dataValue.Index(i)
+	for i := 0; i < d.sliceDataValue.Len(); i++ {
+		item := d.sliceDataValue.Index(i)
 		if item.Kind() == reflect.Ptr {
-			d.storeKVIntoMap(item.Elem().FieldByIndex(structField.Index), item, &d.elemMap)
+			d.storeKVIntoMap(item.Elem().FieldByIndex(structField.Index), item, &d.key2ElemSlice)
 		} else {
-			d.storeKVIntoMap(item.FieldByIndex(structField.Index), item.Addr(), &d.elemMap)
+			d.storeKVIntoMap(item.FieldByIndex(structField.Index), item.Addr(), &d.key2ElemSlice)
 		}
 	}
 
@@ -166,8 +155,8 @@ func (d *DataBox) JoinByMap(f FetchObjsByKeysRetMapFunc) *DataBox {
 		return d
 	}
 
-	keyList := reflect.MakeSlice(reflect.SliceOf(d.elemMap.Type().Key()), 0, len(d.elemMap.MapKeys()))
-	for _, v := range d.elemMap.MapKeys() {
+	keyList := reflect.MakeSlice(reflect.SliceOf(d.key2ElemSlice.Type().Key()), 0, len(d.key2ElemSlice.MapKeys()))
+	for _, v := range d.key2ElemSlice.MapKeys() {
 		keyList = reflect.Append(keyList, v)
 	}
 
@@ -177,61 +166,7 @@ func (d *DataBox) JoinByMap(f FetchObjsByKeysRetMapFunc) *DataBox {
 		return nil
 	}
 
-	d.relatedMap = reflect.ValueOf(retMap)
-	return d
-}
-
-func (d *DataBox) JoinByObjs(f FetchObjsByKeysRetSliceFunc, relatedfield string) *DataBox {
-	if d.err != nil {
-		return d
-	}
-
-	keyList := reflect.MakeSlice(reflect.SliceOf(d.elemMap.Type().Key()), 0, len(d.elemMap.MapKeys()))
-	for _, v := range d.elemMap.MapKeys() {
-		keyList = reflect.Append(keyList, v)
-	}
-
-	// 获取关联数据
-	retObjSlice := f(keyList.Interface())
-	if retObjSlice == nil {
-		d.err = fmt.Errorf("User Define Function Must Returned Nil")
-		return d
-	}
-
-	v := reflect.ValueOf(retObjSlice)
-	t := v.Type()
-	if t.Kind() != reflect.Slice {
-		d.err = fmt.Errorf("User Define Function Must Return Slice")
-		return d
-	}
-
-	objPtrType := t.Elem()
-	if t.Elem().Kind() != reflect.Ptr {
-		objPtrType = reflect.PtrTo(t.Elem())
-	}
-
-	sf, exsit := objPtrType.Elem().FieldByName(relatedfield)
-	if !exsit {
-		d.err = fmt.Errorf("Relatedfield: %s not In Obj Which In Return Slice", relatedfield)
-		return d
-	}
-
-	if sf.Type.Kind() == reflect.Ptr {
-		d.relatedMap = reflect.MakeMap(reflect.MapOf(sf.Type.Elem(), reflect.SliceOf(objPtrType)))
-	} else {
-		d.relatedMap = reflect.MakeMap(reflect.MapOf(sf.Type, reflect.SliceOf(objPtrType)))
-	}
-
-	// 把返回对象放入Map中
-	for i := 0; i < v.Len(); i++ {
-		item := v.Index(i)
-		if item.Kind() == reflect.Ptr {
-			d.storeKVIntoMap(item.Elem().FieldByIndex(sf.Index), item, &d.relatedMap)
-		} else {
-			d.storeKVIntoMap(item.FieldByIndex(sf.Index), item.Addr(), &d.relatedMap)
-		}
-	}
-
+	d.retMap = reflect.ValueOf(retMap)
 	return d
 }
 
@@ -240,78 +175,75 @@ func (d *DataBox) SaveToField(fieldName string) error {
 		return d.err
 	}
 
-	// map -> value(slice) -> obj(pointer) -> realobj(obj)
-	saveStructField, exist := d.elemMap.Type().Elem().Elem().Elem().FieldByName(fieldName)
+	destField, exist := d.elemPtrType.Elem().FieldByName(fieldName)
 	if !exist {
 		return fmt.Errorf("%s not exsit in struct", fieldName)
 	}
 
-	// saveStructField 与 用户函数返回的map的value类型必须相同 (兼容指针情况)
+	// destField 与 用户函数返回的map的value类型必须相同 (兼容指针情况)
 	var retTypeIsPtr bool = false
-	rettype := d.relatedMap.Type().Elem()
-	if rettype.Kind() == reflect.Ptr {
+	retType := d.retMap.Type().Elem()
+	if retType.Kind() == reflect.Ptr {
 		retTypeIsPtr = true
-		rettype = d.relatedMap.Type().Elem().Elem()
+		retType = d.retMap.Type().Elem().Elem()
 	}
 
 	var destTypeIsPtr bool = false
-	dsttype := saveStructField.Type
-	if dsttype.Kind() == reflect.Ptr {
+	destType := destField.Type
+	if destType.Kind() == reflect.Ptr {
 		destTypeIsPtr = true
-		dsttype = saveStructField.Type.Elem()
+		destType = destField.Type.Elem()
 	}
 
-	if rettype.Kind() != dsttype.Kind() {
+	if retType.Kind() != destType.Kind() {
 		// 如果不相等，那么返回的可能是slice，那做特殊处理
-		if rettype.Kind() == reflect.Slice {
-			if rettype.Elem().Kind() == reflect.Ptr {
-				if rettype.Elem().Elem().Kind() == dsttype.Kind() {
-					return d.saveToFieldWithSlice(&saveStructField, destTypeIsPtr)
+		if retType.Kind() == reflect.Slice {
+			if retType.Elem().Kind() == reflect.Ptr {
+				if retType.Elem().Elem().Kind() == destType.Kind() {
+					return d.saveToFieldWithSlice(&destField, destTypeIsPtr)
 				}
-			} else if rettype.Kind() == dsttype.Kind() {
-				return d.saveToFieldWithSlice(&saveStructField, destTypeIsPtr)
+			} else if retType.Kind() == destType.Kind() {
+				return d.saveToFieldWithSlice(&destField, destTypeIsPtr)
 			}
 		}
 
-		if rettype.Kind() == reflect.Ptr && rettype.Elem().Kind() == reflect.Slice {
-			if rettype.Elem().Elem().Kind() == reflect.Ptr {
-				if rettype.Elem().Elem().Elem().Kind() == dsttype.Kind() {
-					return d.saveToFieldWithSlice(&saveStructField, destTypeIsPtr)
+		if retType.Kind() == reflect.Ptr && retType.Elem().Kind() == reflect.Slice {
+			if retType.Elem().Elem().Kind() == reflect.Ptr {
+				if retType.Elem().Elem().Elem().Kind() == destType.Kind() {
+					return d.saveToFieldWithSlice(&destField, destTypeIsPtr)
 				}
-			} else if rettype.Elem().Kind() == dsttype.Kind() {
-				return d.saveToFieldWithSlice(&saveStructField, destTypeIsPtr)
+			} else if retType.Elem().Kind() == destType.Kind() {
+				return d.saveToFieldWithSlice(&destField, destTypeIsPtr)
 			}
 		}
 
-		return fmt.Errorf("Type Error When SaveToField: rettype: %s != desttype: %s", rettype.String(), dsttype.String())
+		return fmt.Errorf("Type Error When SaveToField: retType: %s != desttype: %s", retType.String(), destType.String())
 	}
 
 	// 填充slice的时候，可能需要一个一个处理
 	var isNeedConvertWhenElemTypeNotEquelInSlice = false
-	if dsttype.Kind() == reflect.Slice && rettype.Kind() == reflect.Slice {
-		if dsttype.Elem().Kind() != rettype.Elem().Kind() {
+	if destType.Kind() == reflect.Slice && retType.Kind() == reflect.Slice {
+		if destType.Elem().Kind() != retType.Elem().Kind() {
 			isNeedConvertWhenElemTypeNotEquelInSlice = true
 		}
 	}
 
 	// saveStructField可以是slice或者是struct或者是一个普通类型
-	iter := d.relatedMap.MapRange()
+	iter := d.retMap.MapRange()
 	for iter.Next() {
-		saveElemSlice := d.elemMap.MapIndex(iter.Key())
+		saveElemSlice := d.key2ElemSlice.MapIndex(iter.Key())
 		if !saveElemSlice.IsValid() {
 			continue
 		}
 
 		retObjValue := iter.Value()
 		if isNeedConvertWhenElemTypeNotEquelInSlice {
-			retObjValue = convertSlice(iter.Value(), dsttype)
+			retObjValue = convertSlice(iter.Value(), destType)
 		}
-
-		fmt.Println(retObjValue.Type())
 
 		// 把value放入saveElem slice中对象的fieldName处
 		for i := 0; i < saveElemSlice.Len(); i++ {
-			dest := saveElemSlice.Index(i).Elem().FieldByIndex(saveStructField.Index)
+			dest := saveElemSlice.Index(i).Elem().FieldByIndex(destField.Index)
 			if destTypeIsPtr {
 				if retTypeIsPtr {
 					dest.Set(retObjValue)
@@ -330,6 +262,41 @@ func (d *DataBox) SaveToField(fieldName string) error {
 
 	return nil
 }
+
+// 把keyField指向的key作为map的key，obj in objSlice作为value，组成一个map，value为Ptr类型
+//func Slice2MapByField(objSlice interface{}, keyField string) map[interface{}]interface{} {
+//	retMap := map[interface{}]interface{}{}
+//
+//	typeOfObjSlice := reflect.TypeOf(objSlice)
+//	if typeOfObjSlice.Kind() != reflect.Slice {
+//		panic("Slice2MapByField's objSlice must be slice")
+//	}
+//
+//	var ok bool
+//	var structField reflect.StructField
+//	if typeOfObjSlice.Elem().Kind() == reflect.Ptr {
+//		structField, ok = typeOfObjSlice.Elem().Elem().FieldByName(keyField)
+//	} else {
+//		structField, ok = typeOfObjSlice.Elem().FieldByName(keyField)
+//	}
+//
+//	if !ok {
+//		return retMap
+//	}
+//
+//	valueOfObjSlice := reflect.ValueOf(objSlice)
+//	for i := 0; i < valueOfObjSlice.Len(); i++ {
+//		if typeOfObjSlice.Elem().Kind() == reflect.Ptr {
+//			key := valueOfObjSlice.Index(i).Elem().Field(structField.Index[0]).Interface()
+//			retMap[key] = valueOfObjSlice.Index(i).Interface()
+//		} else {
+//			key := valueOfObjSlice.Index(i).Field(structField.Index[0]).Interface()
+//			retMap[key] = valueOfObjSlice.Index(i).Addr().Interface()
+//		}
+//	}
+//
+//	return retMap
+//}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //
@@ -354,15 +321,15 @@ func (d *DataBox) saveToFieldWithSlice(saveStructField *reflect.StructField, des
 	}
 
 	var retTypeIsPtr bool = false
-	rettype := d.relatedMap.Type().Elem().Elem() // map的成员为slice，再返回slice的成员
+	rettype := d.retMap.Type().Elem().Elem() // map的成员为slice，再返回slice的成员
 	if rettype.Kind() == reflect.Ptr {
 		retTypeIsPtr = true
 	}
 
 	// saveStructField可以是slice或者是struct或者是一个普通类型
-	iter := d.relatedMap.MapRange()
+	iter := d.retMap.MapRange()
 	for iter.Next() {
-		saveElemSlice := d.elemMap.MapIndex(iter.Key())
+		saveElemSlice := d.key2ElemSlice.MapIndex(iter.Key())
 		if !saveElemSlice.IsValid() {
 			continue
 		}
@@ -423,3 +390,5 @@ func convertSlice(value reflect.Value, destSliceType reflect.Type) reflect.Value
 
 	return destSlice
 }
+
+
