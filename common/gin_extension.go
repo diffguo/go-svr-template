@@ -34,9 +34,8 @@ func GinLogger(threshold time.Duration) gin.HandlerFunc {
 					c.Request.Body = ioutil.NopCloser(bytes.NewReader(body))
 
 					if body != nil {
-						data, _ := ioutil.ReadAll(c.Request.Body)
 						log.Debugf("[GIN DEBUG] %s %s URL: %s Header: %+v Body: %s", c.Request.Method, c.Request.Proto,
-							c.Request.URL.String(), c.Request.Header, string(data))
+							c.Request.URL.String(), c.Request.Header, string(body))
 					} else {
 						log.Debugf("[GIN DEBUG] %s %s URL: %s Header: %+v Body err", c.Request.Method, c.Request.Proto,
 							c.Request.URL.String(), c.Request.Header)

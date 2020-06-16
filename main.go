@@ -48,7 +48,7 @@ var (
 
 const SERVERNAME = "TemplateServer"
 
-func initConfig() error {
+func initConfig(confFilePath string) error {
 	var etcdHost string
 	var configFilename string
 	flag.StringVar(&configFilename, "c", "", "config file")
@@ -57,6 +57,10 @@ func initConfig() error {
 
 	flag.Parse()
 	var err error
+
+	if configFilename == "" {
+		configFilename = confFilePath
+	}
 
 	if configFilename != "" {
 		err = common.LoadCfgFromFile(configFilename, &Config)
@@ -104,7 +108,7 @@ func main() {
 	env = strings.ToLower(env)
 	fmt.Printf("Start %s In %s Env\n", SERVERNAME, env)
 
-	err := initConfig()
+	err := initConfig("")
 	if nil != err {
 		fmt.Println("initConfig err :", err)
 		return
