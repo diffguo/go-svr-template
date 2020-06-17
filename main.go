@@ -29,6 +29,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go-svr-template/apis"
 	"go-svr-template/common"
+	"go-svr-template/common/cache"
 	"go-svr-template/common/log"
 	"go-svr-template/docs"
 	"go-svr-template/models"
@@ -76,13 +77,19 @@ func initConfig(confFilePath string) error {
 }
 
 func initDB(env string) error {
-	dbConf := Config.MysqlSetting["MysqlInstance0"]
+	dbConf := Config.MysqlSetting["MysqlInstance"]
 	_, err := models.InitGormDbPool(&dbConf, env != "online")
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func initCache() {
+	redisConf := Config.RedisSetting["RedisInstance"]
+	cache.InitRedis([]string{redisConf.RedisConn}, redisConf.RedisPassword, redisConf.RedisDb, redisConf.PoolSize,
+		redisConf.MinIdleConnNum, 3, false)
 }
 
 func swaggerInfo() {
@@ -119,6 +126,8 @@ func main() {
 		fmt.Println("initDB err :", err)
 		return
 	}
+
+	initCache()
 
 	_, err = log.InitLog(Config.LogSetting.LogDir, Config.LogSetting.LogFile, Config.LogSetting.LogLevel, Config.LogSetting.LogSize)
 	if nil != err {

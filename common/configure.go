@@ -30,9 +30,9 @@ type RedisConfig struct {
 	ConnectTimeout int
 	WriteTimeout   int
 	IdleTimeout    int
-	MaxIdle        int
-	MaxActive      int
-	RedisDb        string
+	MinIdleConnNum int
+	PoolSize       int
+	RedisDb        int
 }
 
 type OssConfig struct {

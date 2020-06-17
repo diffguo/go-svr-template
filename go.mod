@@ -10,6 +10,7 @@ require (
 	github.com/chanxuehong/wechat v0.0.0-20200409104612-0a1fd76d7a3a
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-playground/validator/v10 v10.2.0
+	github.com/go-redis/redis v6.15.8+incompatible
 	github.com/jinzhu/gorm v1.9.12
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/stretchr/testify v1.4.0
