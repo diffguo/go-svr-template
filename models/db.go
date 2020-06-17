@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"go-svr-template/common"
+	"github.com/diffguo/gocom"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
@@ -13,7 +13,7 @@ type LocalDB struct {
 
 var GDB *LocalDB
 
-func InitGormDbPool(config *common.MysqlConfig, setLog bool) (*LocalDB, error) {
+func InitGormDbPool(config *gocom.MysqlConfig, setLog bool) (*LocalDB, error) {
 	db, err := gorm.Open("mysql", config.MysqlConn)
 	if err != nil {
 		fmt.Println("init db err : ", config, err)
@@ -33,7 +33,7 @@ func InitGormDbPool(config *common.MysqlConfig, setLog bool) (*LocalDB, error) {
 		return nil, err
 	}
 
-	GDB = &LocalDB{ db}
+	GDB = &LocalDB{db}
 	return GDB, nil
 }
 

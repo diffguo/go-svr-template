@@ -8,7 +8,7 @@ import (
 	"github.com/chanxuehong/wechat/mp/message/callback/request"
 	"github.com/chanxuehong/wechat/mp/message/callback/response"
 	"github.com/gin-gonic/gin"
-	"go-svr-template/common/log"
+	"github.com/diffguo/gocom/log"
 	"go-svr-template/models"
 	"io/ioutil"
 	"net/http"

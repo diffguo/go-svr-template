@@ -1,16 +1,16 @@
 package main
 
 import (
+	"github.com/diffguo/gocom"
 	"github.com/gin-gonic/gin"
 	"github.com/swaggo/files"       // swagger embed files
-	"github.com/swaggo/gin-swagger" // gin-swagger middleware
+	"github.com/swaggo/gin-swagger" // io-swagger middleware
 	"go-svr-template/apis"
-	"go-svr-template/common"
 )
 
 func addRoute(router *gin.Engine) {
 
-	common.AddPProfHandler(router)
+	gocom.AddPProfHandler(router)
 
 	test := router.Group("/test")
 	{

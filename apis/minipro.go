@@ -1,19 +1,20 @@
 package apis
 
 import (
+	"github.com/diffguo/gocom"
+	"github.com/diffguo/gocom/log"
+	"github.com/diffguo/gocom/tools"
+	"github.com/diffguo/gocom/wx_pay"
 	"github.com/gin-gonic/gin"
-	"go-svr-template/common"
-	"go-svr-template/common/log"
-	"go-svr-template/common/tools"
-	"go-svr-template/common/wx_pay"
 	"go-svr-template/controller"
+	"go-svr-template/io"
 	"go-svr-template/models"
 	"net/http"
 	"time"
 )
 
 func ApiDecodePhoneNumber(c *gin.Context) {
-	userId, err := controller.GetSelfUserId(c)
+	userId, err := io.GetSelfUserId(c)
 	if err != nil {
 		return
 	}
@@ -21,7 +22,7 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 	upWX, err := models.GetUserWXWithUserId(nil, userId)
 	if err != nil {
 		log.Errorf("cant get user profile: %d", userId)
-		common.SendResponse(c, "", common.ErrCodeDBErr)
+		io.SendResponse(c, "", io.ErrCodeDBErr)
 		return
 	}
 
@@ -34,7 +35,7 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 	err = c.Bind(&ts)
 	if err != nil || ts.EncryptedData == "" || ts.Iv == "" {
 		log.Errorf("miss param: %+v, userId: %d", ts, userId)
-		common.SendResponse(c, "", common.ErrCodeParamErr)
+		io.SendResponse(c, "", io.ErrCodeParamErr)
 		return
 	}
 
@@ -46,14 +47,14 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 		mobileNumber := result.(map[string]interface{})["purePhoneNumber"].(string)
 		if err = models.UpdateUserByUserId(nil, userId, map[string]interface{}{"mobile_number": mobileNumber, "mobile_verified": 1, "mobile_verify_time": time.Now()}); err != nil {
 			log.Errorf("UpdateUserByUserId Err: %s, userId: %d", err.Error(), userId)
-			common.SendResponse(c, "", common.ErrCodeDBErr)
+			io.SendResponse(c, "", io.ErrCodeDBErr)
 			return
 		} else {
-			common.SendSimpleResponse(c, mobileNumber)
+			gocom.SendSimpleResponse(c, mobileNumber)
 		}
 	} else {
 		log.Errorf("PhoneNumber decode Err: %s, userId: %d", err.Error(), userId)
-		common.SendResponseImp(c, "", common.ErrCodeLogicErr, "PhoneNumber decode Err")
+		gocom.SendResponseImp(c, "", io.ErrCodeLogicErr, "PhoneNumber decode Err")
 	}
 }
 

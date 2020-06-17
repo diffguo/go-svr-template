@@ -3,7 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"go-svr-template/common/log"
+	"github.com/diffguo/gocom/log"
 	"io/ioutil"
 	"net/http"
 	"time"

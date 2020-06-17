@@ -1,10 +1,10 @@
-package controller
+package io
 
 import (
 	"fmt"
+	"github.com/diffguo/gocom"
+	"github.com/diffguo/gocom/log"
 	"github.com/gin-gonic/gin"
-	"go-svr-template/common"
-	"go-svr-template/common/log"
 	"strconv"
 )
 
@@ -34,7 +34,7 @@ func GetSelfUserId(c *gin.Context) (int64, error) {
 	defer func() {
 		if err != nil || userId == 0 {
 			log.Errorf("cant get userId: %s", err.Error())
-			common.SendResponseImp(c, "", common.ErrCodeParamErr, "Get User Id err")
+			gocom.SendResponseImp(c, "", ErrCodeParamErr, "Get User Id err")
 		}
 	}()
 

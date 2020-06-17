@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"go-svr-template/common/log"
+	"github.com/diffguo/gocom/log"
 	"go-svr-template/models"
 	"io/ioutil"
 	"os"

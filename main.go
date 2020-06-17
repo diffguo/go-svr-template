@@ -26,11 +26,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/diffguo/gocom"
+	"github.com/diffguo/gocom/cache"
+	"github.com/diffguo/gocom/log"
 	"github.com/gin-gonic/gin"
 	"go-svr-template/apis"
-	"go-svr-template/common"
-	"go-svr-template/common/cache"
-	"go-svr-template/common/log"
 	"go-svr-template/docs"
 	"go-svr-template/models"
 	"net/http"
@@ -43,7 +43,7 @@ import (
 )
 
 var (
-	Config     common.Configure
+	Config     gocom.Configure
 	GWaitGroup sync.WaitGroup
 )
 
@@ -64,7 +64,7 @@ func initConfig(confFilePath string) error {
 	}
 
 	if configFilename != "" {
-		err = common.LoadCfgFromFile(configFilename, &Config)
+		err = gocom.LoadCfgFromFile(configFilename, &Config)
 		if nil != err {
 			fmt.Printf("get config from file(%s) err: %s \n", configFilename, err.Error())
 			return err
@@ -150,9 +150,9 @@ func main() {
 
 	router := gin.New()
 	router.Use(gin.RecoveryWithWriter(log.GLog.Log.Writer()))
-	router.Use(common.GinLogger(3 * time.Second))
-	router.Use(common.Cors())
-	router.Use(common.CheckAuth())
+	router.Use(gocom.GinLogger(3 * time.Second))
+	router.Use(gocom.Cors())
+	router.Use(gocom.CheckAuth())
 
 	addRoute(router)
 	log.Info("Run Server")
@@ -190,11 +190,11 @@ func HandleSignal(signals ...os.Signal) {
 	s := <-sig
 	ServerRunning = false
 
-	log.Infof("gin: graceful exit action from signal [%s]", s.String())
+	log.Infof("io: graceful exit action from signal [%s]", s.String())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	httpSvr.Shutdown(ctx)
 	cancel()
 
-	log.Infof("gin: bye!")
+	log.Infof("io: bye!")
 }

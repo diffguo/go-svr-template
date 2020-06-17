@@ -1,7 +1,7 @@
 package main
 
 import (
-	"go-svr-template/common/log"
+	"github.com/diffguo/gocom/log"
 	"time"
 )
 

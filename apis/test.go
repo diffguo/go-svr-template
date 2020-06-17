@@ -2,8 +2,9 @@ package apis
 
 import (
 	"github.com/gin-gonic/gin"
-	"go-svr-template/common"
-	"go-svr-template/common/log"
+	"github.com/diffguo/gocom"
+	"github.com/diffguo/gocom/log"
+	"go-svr-template/io"
 )
 
 // PingPong godoc
@@ -23,12 +24,12 @@ func PingPong(c *gin.Context)  {
 	}
 
 	var is InputStructure
-	ok := common.Bind(c, &is)
+	ok := gocom.Bind(c, &is)
 	if !ok {
-		common.SendResponse(c, "", common.ErrCodeParamErr)
+		io.SendResponse(c, "", io.ErrCodeParamErr)
 		return
 	}
 
 	log.Infof("PingPong: %+v", is)
-	common.SendSimpleResponse(c, is.Content)
+	gocom.SendSimpleResponse(c, is.Content)
 }

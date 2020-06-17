@@ -1,4 +1,4 @@
-package common
+package io
 
 // 定义10000以上的ErrCode和其含义。 客户端自己使用的范围为 700~10000， 700以下兼容http状态码
 

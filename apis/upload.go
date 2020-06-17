@@ -2,17 +2,17 @@ package apis
 
 import (
 	"fmt"
+	"github.com/diffguo/gocom"
+	"github.com/diffguo/gocom/log"
+	"github.com/diffguo/gocom/tools"
 	"github.com/gin-gonic/gin"
-	"go-svr-template/controller"
-	"go-svr-template/common"
-	"go-svr-template/common/log"
-	"go-svr-template/common/tools"
+	"go-svr-template/io"
 )
 
 const CDNUrl = "https://xxx.oss-cn-chengdu.aliyuncs.com"
 
 func ApiUploadAvatar(c *gin.Context) {
-	userId, err := controller.GetSelfUserId(c)
+	userId, err := io.GetSelfUserId(c)
 	if err != nil {
 		return
 	}
@@ -23,7 +23,7 @@ func ApiUploadAvatar(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		log.Errorf("read body err: %s", err.Error())
-		common.SendResponseImp(c, "", common.ErrCodeParamErr, "上传失败，读取上传数据失败!")
+		gocom.SendResponseImp(c, "", io.ErrCodeParamErr, "上传失败，读取上传数据失败!")
 		return
 	}
 
@@ -32,8 +32,8 @@ func ApiUploadAvatar(c *gin.Context) {
 
 	success := tools.UploadToTWNoExpireOss(resourcePath, contentType, file)
 	if success {
-		common.SendSimpleResponse(c, fmt.Sprintf("%s/%s", CDNUrl, resourcePath))
+		gocom.SendSimpleResponse(c, fmt.Sprintf("%s/%s", CDNUrl, resourcePath))
 	} else {
-		common.SendResponseImp(c, "", common.ErrCodeLogicErr, "上传到OSS失败，请重试")
+		gocom.SendResponseImp(c, "", io.ErrCodeLogicErr, "上传到OSS失败，请重试")
 	}
 }
