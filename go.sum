@@ -31,6 +31,10 @@ github.com/diffguo/gocom v0.0.0-20200617105326-e6676cedb332 h1:LAG/MTgTH4ZMMNbcs
 github.com/diffguo/gocom v0.0.0-20200617105326-e6676cedb332/go.mod h1:4u6xmogrRk+fhFDtHxkYg1FpetXf5kIc7anXz+68sWc=
 github.com/diffguo/gocom v0.0.0-20200617105706-4e4d05c072ff h1:ZtsyJXgBHPD8D6ZjpEfoXKerAghZJZV4yH/tYelKQnA=
 github.com/diffguo/gocom v0.0.0-20200617105706-4e4d05c072ff/go.mod h1:4u6xmogrRk+fhFDtHxkYg1FpetXf5kIc7anXz+68sWc=
+github.com/diffguo/gocom v0.0.0-20200618014023-45570d8c9f04 h1:jl4RbGXz1HBBe8/nuG2CYebw9Z9hiBapulJ9E2O7EbI=
+github.com/diffguo/gocom v0.0.0-20200618014023-45570d8c9f04/go.mod h1:gD84wvd9sUbN0KUDyffjnj+BgueQ+WCpfoc7VocDxbo=
+github.com/diffguo/gocom v0.0.0-20200618015326-c5a204cfef65 h1:5BM9bYXLS+HRb8CEjM2lAtq/BfTvQ2MJ9vdtgJMn9X0=
+github.com/diffguo/gocom v0.0.0-20200618015326-c5a204cfef65/go.mod h1:gD84wvd9sUbN0KUDyffjnj+BgueQ+WCpfoc7VocDxbo=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 h1:Yzb9+7DPaBjB8zlTR87/ElzFsnQfuHnVUVqpZZIcV5Y=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5/go.mod h1:a2zkGnVExMxdzMo3M0Hi/3sEU+cWnZpSni0O6/Yb/P0=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=

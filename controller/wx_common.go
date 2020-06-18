@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	WXAppId            = "wxaaa11cb3d2845000"
-	WXAppSecret        = "dc11142a4497dac806a062225ad2d333"
+	WXAppId            = ""
+	WXAppSecret        = ""
 )
 
 var accessToken string

@@ -9,7 +9,16 @@ import (
 	"go-svr-template/io"
 )
 
-const CDNUrl = "https://xxx.oss-cn-chengdu.aliyuncs.com"
+const CDNUrl = ""
+var YourBucket *tools.OssBucket
+
+func InitOss()  {
+	var err error
+	YourBucket, err = tools.InitOssBucket("", "", "", "", 100)
+	if err != nil {
+		fmt.Printf("init oss err: %s", err.Error())
+	}
+}
 
 func ApiUploadAvatar(c *gin.Context) {
 	userId, err := io.GetSelfUserId(c)
@@ -30,7 +39,7 @@ func ApiUploadAvatar(c *gin.Context) {
 	contentType := header.Header["Content-Type"][0]
 	log.Infof("upload file: %s size: %d, userId: %d, to file: %s", contentType, header.Size, userId, resourcePath)
 
-	success := tools.UploadToTWNoExpireOss(resourcePath, contentType, file)
+	success := YourBucket.UploadToOss(resourcePath, contentType, file)
 	if success {
 		gocom.SendSimpleResponse(c, fmt.Sprintf("%s/%s", CDNUrl, resourcePath))
 	} else {

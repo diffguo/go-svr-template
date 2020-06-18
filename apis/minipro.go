@@ -73,8 +73,7 @@ func ApiWXPayCallBack(c *gin.Context) {
 		return
 	}
 
-	client := wx_pay.Client{ApiKey: wx_pay.WX_APP_KEY}
-	sign := client.Sign(wxPayParams)
+	sign := wx_pay.WXPayClient.Sign(wxPayParams)
 	if sign != wxPayParams.GetString("sign") {
 		log.Warnf("验签失败. 参数：%+v, sign: %s", wxPayParams, sign)
 		c.String(http.StatusOK, failContent)

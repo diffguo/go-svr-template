@@ -39,4 +39,5 @@ cd $ProjectPath
 rm -rf start_project.sh $ProjectName go.mod go.sum ./log/* dev.sh
 go mod init $ProjectName
 sed -i "" "s/go-svr-template/$ProjectName/g" `grep go-svr-template -rl .`
-sed -i "" "s/TemplateServer/$ProjectName/g" `grep TemplateServer -rl .`
+Key=`openssl rand -hex 16`
+sed -i "" "s/GinAuthKeyContent123456789012345/$Key/g" main.go

@@ -4,13 +4,11 @@ go 1.12
 
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
-	github.com/aliyun/aliyun-oss-go-sdk v2.1.1+incompatible // indirect
 	github.com/chanxuehong/wechat v0.0.0-20200409104612-0a1fd76d7a3a
-	github.com/diffguo/gocom v0.0.0-20200617105706-4e4d05c072ff
+	github.com/diffguo/gocom v0.0.0-20200618015326-c5a204cfef65
 	github.com/gin-gonic/gin v1.6.3
 	github.com/jinzhu/gorm v1.9.13
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14
 	github.com/swaggo/gin-swagger v1.2.0
 	github.com/swaggo/swag v1.6.7
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 )

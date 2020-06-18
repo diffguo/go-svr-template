@@ -17,23 +17,42 @@ func addRoute(router *gin.Engine) {
 		test.GET("/ping", apis.PingPong)
 	}
 
-	admin := router.Group("/admin")
+	api := router.Group("/api")
 	{
-		admin.POST("/login", apis.ApiLogin)
-		admin.POST("/upload", apis.ApiUploadAvatar)
-	}
+		// APP
+		app := api.Group("/app")
+		{
+			app.POST("test", apis.PingPong)
+		}
 
-	miniProgram := router.Group("/minipro")
-	{
-		miniProgram.POST("decode_phone_number", apis.ApiDecodePhoneNumber)
-		miniProgram.POST("wx_pay_callback", apis.ApiWXPayCallBack)
-	}
+		// 管理后台
+		admin := api.Group("/admin")
+		{
+			admin.POST("/login", apis.ApiLogin)
+			admin.POST("/upload", apis.ApiUploadAvatar)
+		}
 
-	// 公众号
-	wechat := router.Group("/wechat")
-	{
-		wechat.GET("/wx_callback", apis.UserWxCallbackHandler)
-		wechat.POST("/wx_callback", apis.UserWxCallbackHandler)
+		// 小程序
+		miniProgram := api.Group("/minipro")
+		{
+			miniProgram.POST("decode_phone_number", apis.ApiDecodePhoneNumber)
+		}
+
+		// 回调，走这里不鉴权
+		callback := api.Group("/callback")
+		{
+			miniProgram.POST("wx_pay_callback", apis.ApiWXPayCallBack)
+			callback.GET("/wechat_callback", apis.UserWxCallbackHandler)  // 公众号回调
+			callback.POST("/wechat_callback", apis.UserWxCallbackHandler) // 公众号回调
+		}
+
+		// 登录，走这里不鉴权
+		login := api.Group("/login")
+		{
+			login.POST("app_login", apis.ApiLogin)
+			login.POST("mini_pro_login", apis.ApiLogin)
+			login.POST("admin_login", apis.ApiLogin)
+		}
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

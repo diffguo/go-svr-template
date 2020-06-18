@@ -47,7 +47,8 @@ var (
 	GWaitGroup sync.WaitGroup
 )
 
-const SERVERNAME = "TemplateServer"
+const SERVERNAME = "go-svr-templateServer"
+const GinAuthKey = "GinAuthKeyContent123456789012345" // 32字节长
 
 func initConfig(confFilePath string) error {
 	var etcdHost string
@@ -128,6 +129,12 @@ func main() {
 	}
 
 	initCache()
+
+	err = gocom.InitGinAuth(GinAuthKey)
+	if nil != err {
+		fmt.Println("InitGinAuth err :", err)
+		return
+	}
 
 	_, err = log.InitLog(Config.LogSetting.LogDir, Config.LogSetting.LogFile, Config.LogSetting.LogLevel, Config.LogSetting.LogSize)
 	if nil != err {
