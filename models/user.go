@@ -15,9 +15,6 @@ type User struct {
 	MobileNumber string     `gorm:"not null;type:varchar(20);unique_index" json:"mobile_number"`
 	Password     string     `gorm:"not null;type:varchar(64)" json:"-"`
 	RawPass      string     `gorm:"-" json:"raw_pass"` // 客户端传来的密码, 创建时上传
-	IsAdmin      bool       `json:"is_admin"`
-	IsOperator   bool       `json:"is_operator"`
-	IsGuide      bool       `json:"is_guide"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 	DeletedAt    *time.Time `json:"-" json:"deleted_at"`

@@ -26,7 +26,7 @@ func ApiUploadAvatar(c *gin.Context) {
 		return
 	}
 
-	postFix := c.Param("post_fix")
+	postFix := c.Query("post_fix")
 	resourcePath := fmt.Sprintf("user/avatar/%d.%s", userId, postFix)
 
 	file, header, err := c.Request.FormFile("file")

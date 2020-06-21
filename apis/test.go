@@ -1,10 +1,11 @@
 package apis
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/diffguo/gocom"
 	"github.com/diffguo/gocom/log"
+	"github.com/gin-gonic/gin"
 	"go-svr-template/io"
+	"go-svr-template/models"
 )
 
 // PingPong godoc
@@ -18,7 +19,7 @@ import (
 // @Failure 404 {object} common.CommonRspHead
 // @Failure 500 {object} common.CommonRspHead
 // @Router /test/ping [get]
-func PingPong(c *gin.Context)  {
+func PingPong(c *gin.Context) {
 	type InputStructure struct {
 		Content string `form:"content" binding:"required"`
 	}
@@ -32,4 +33,33 @@ func PingPong(c *gin.Context)  {
 
 	log.Infof("PingPong: %+v", is)
 	gocom.SendSimpleResponse(c, is.Content)
+}
+
+func Transaction(c *gin.Context) {
+	var err error
+	tx := models.LocalDB{DB: models.GDB.Begin()}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	comment := models.Comment{Content: "t1"}
+	user := models.User{Name: "testName"}
+
+	err = comment.Create(&tx)
+	if err != nil {
+		log.Errorf("comment.Create err: %s", err.Error())
+		gocom.SendSimpleResponse(c, "Transaction err")
+		return
+	}
+
+	err = user.Create(&tx)
+	if err != nil {
+		log.Errorf("user.Create err: %s", err.Error())
+		gocom.SendSimpleResponse(c, "Transaction err")
+		return
+	}
+
+	gocom.SendSimpleResponse(c, "Transaction Success")
 }

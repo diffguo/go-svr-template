@@ -21,7 +21,7 @@ func ApiCheckAuth(c *gin.Context) {
 func ApiLogin(c *gin.Context) {
 	type InputStructure struct {
 		MobileNumber string `json:"mobile_number"`
-		PassWord     string `json:"pass_word"`
+		Password     string `json:"password"`
 	}
 
 	var is InputStructure
@@ -31,7 +31,7 @@ func ApiLogin(c *gin.Context) {
 		return
 	}
 
-	passWord := controller.Hmac4Password(is.PassWord)
+	passWord := controller.Hmac4Password(is.Password)
 	up, err := models.GetUserByPassword(nil, is.MobileNumber, passWord)
 	if err != nil {
 		log.Errorf("db err: %s", err.Error())
