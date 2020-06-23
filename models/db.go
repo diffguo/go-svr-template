@@ -65,5 +65,10 @@ func CreateTable() error {
 		return err
 	}
 
+	tNotice := Notice{}
+	if err = tNotice.CreateTable(GDB); err != nil {
+		return err
+	}
+
 	return nil
 }

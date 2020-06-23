@@ -6,8 +6,8 @@ import (
 
 type Comment struct {
 	ID              int64     `gorm:"primary_key" json:"id"`
-	Content         string    `gorm:"not null;type:varchar(256)" json:"content"`
-	Pics            string    `gorm:"not null;type:varchar(1024)" json:"pics"`
+	Content         string    `gorm:"not null;type:varchar(256);unique_index:idx_comment" json:"content"`
+	Pics            string    `gorm:"not null;type:varchar(1024);unique_index:idx_comment" json:"pics"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 

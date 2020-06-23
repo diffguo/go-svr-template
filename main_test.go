@@ -56,9 +56,12 @@ func TestSomething( t *testing.T ) {
 		t.Fatal("init fail")
 	}
 
-	comment := models.Comment{Content: "11"}
-	err = comment.Create(nil)
+	notice := &models.Notice{Title: "title1", Content: "content1", AdminId: 2}
+	//err = notice.UpdateNotice(nil, map[string]interface{}{"title": "title", "content": "content", "updated_at": time.Now()})
+	err = notice.Replace(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	fmt.Println(notice)
 }
