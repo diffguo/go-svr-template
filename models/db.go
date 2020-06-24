@@ -5,6 +5,7 @@ import (
 	"github.com/diffguo/gocom"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"reflect"
 )
 
 type LocalDB struct {
@@ -67,6 +68,55 @@ func CreateTable() error {
 
 	tNotice := Notice{}
 	if err = tNotice.CreateTable(GDB); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 实现Mysql的Replace，obj为gorm对象的引用，keyFieldNames为gorm对象结构里面的字段
+// notice := Notice{Title: "test", AdminId: 1}
+// err = Replace(nil, TableNotice, &notice, "Title", "AdminId")
+func Replace(db *LocalDB, tableName string, obj interface{}, keyFieldNames ...string) error {
+	if db == nil {
+		db = GDB
+	}
+
+	typeOfObj := reflect.TypeOf(obj)
+	if typeOfObj.Kind() != reflect.Ptr {
+		return fmt.Errorf("obj must be Ptr")
+	}
+
+	if typeOfObj.Elem().Kind()  != reflect.Struct {
+		return fmt.Errorf("obj elem must be struct")
+	}
+
+	var where string
+	var values = []interface{}{""}
+	scope := gorm.Scope{Value: obj}
+	for _, keyFieldName := range keyFieldNames {
+		structField, ok := typeOfObj.Elem().FieldByName(keyFieldName)
+		if !ok {
+			return fmt.Errorf("%s not in obj struct", keyFieldName)
+		}
+
+		field, ok := scope.FieldByName(keyFieldName)
+		if ok {
+			if where == "" {
+				where = fmt.Sprintf("%s = ?", field.DBName)
+			} else {
+				where = where + fmt.Sprintf(" and %s = ?", field.DBName)
+			}
+		} else {
+			return fmt.Errorf("%s not in obj struct when scope.FieldByName", keyFieldName)
+		}
+
+		values = append(values, reflect.ValueOf(obj).Elem().Field(structField.Index[0]).Interface())
+	}
+
+	values[0] = where
+	err := db.Table(tableName).FirstOrCreate(obj, values...).Error
+	if err != nil {
 		return err
 	}
 
