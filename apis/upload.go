@@ -7,6 +7,7 @@ import (
 	"github.com/diffguo/gocom/tools"
 	"github.com/gin-gonic/gin"
 	"go-svr-template/io"
+	"net/http"
 )
 
 const CDNUrl = ""
@@ -14,7 +15,7 @@ var YourBucket *tools.OssBucket
 
 func InitOss()  {
 	var err error
-	YourBucket, err = tools.InitOssBucket("", "", "", "", 100)
+	//YourBucket, err = tools.InitOssBucket("", "", "", "", 100)
 	if err != nil {
 		fmt.Printf("init oss err: %s", err.Error())
 	}
@@ -45,4 +46,14 @@ func ApiUploadAvatar(c *gin.Context) {
 	} else {
 		gocom.SendResponseImp(c, "", io.ErrCodeLogicErr, "上传到OSS失败，请重试")
 	}
+}
+
+func ApiGetUploadTempToken(c *gin.Context) {
+	tempToken := YourBucket.GetPolicyToken(15)
+	c.JSON(http.StatusOK, tempToken)
+}
+
+func ApiOSSCallback(c *gin.Context) {
+	ok := YourBucket.VerifyCallback(c.Writer, c.Request)
+	fmt.Println("VerifyCallback: ", ok)
 }
