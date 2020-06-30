@@ -44,11 +44,3 @@ func (obj *Notice) UpdateNotice(db *LocalDB, paras map[string]interface{}) error
 }
 
 
-func (obj *Notice) Replace(db *LocalDB) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(obj.TableName()).FirstOrCreate(obj, "title = ? and content = ?", obj.Title, obj.Content).Error
-}
-

@@ -15,7 +15,8 @@ func addRoute(router *gin.Engine) {
 	test := router.Group("/test")
 	{
 		test.GET("/ping", apis.PingPong)
-		test.GET("/transaction", apis.Transaction)
+		test.GET("/validator", apis.TestValidator)
+		test.GET("/transaction_demo", apis.TransactionDemo)
 	}
 
 	// 其它为各端提供API的接口放到api组下面

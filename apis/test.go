@@ -21,7 +21,7 @@ import (
 // @Router /test/ping [get]
 func PingPong(c *gin.Context) {
 	type InputStructure struct {
-		Content string `form:"content" binding:"required"`
+		Content     string `form:"content" binding:"required,len=2"`
 	}
 
 	var is InputStructure
@@ -35,7 +35,30 @@ func PingPong(c *gin.Context) {
 	gocom.SendSimpleResponse(c, is.Content)
 }
 
-func Transaction(c *gin.Context) {
+//https://godoc.org/gopkg.in/go-playground/validator.v9
+func TestValidator(c *gin.Context) {
+	type InputStructure struct {
+		Content     string `form:"content" binding:"required,len=2"`
+		Age         int    `form:"age" binding:"max=10,min=1"`
+		Pass        string `form:"pass" binding:"gte=6"`           // 字母和数字
+		ConfirmPass string `form:"cpass" binding:"eqfield=Pass"`   // 与上一个域相同
+		FileName    string `form:"fname" binding:"gte=2,alphanum"` // 字母和数字
+		Email       string `form:"email" binding:"email"`
+		//Body    string `form:"base64" binding:"base64"` // startswith=hello, endswith=hello, contains=@, uuid, ip
+	}
+
+	var is InputStructure
+	ok := gocom.Bind(c, &is)
+	if !ok {
+		io.SendResponse(c, "", io.ErrCodeParamErr)
+		return
+	}
+
+	log.Infof("TestValidator: %+v", is)
+	gocom.SendSimpleResponse(c, is.Content)
+}
+
+func TransactionDemo(c *gin.Context) {
 	var err error
 	tx := models.LocalDB{DB: models.GDB.Begin()}
 	defer func() {
@@ -44,22 +67,22 @@ func Transaction(c *gin.Context) {
 		}
 	}()
 
-	comment := models.Comment{Content: "t1"}
+	comment := models.TComment{Content: "t1"}
 	user := models.User{Name: "testName"}
 
 	err = comment.Create(&tx)
 	if err != nil {
 		log.Errorf("comment.Create err: %s", err.Error())
-		gocom.SendSimpleResponse(c, "Transaction err")
+		gocom.SendSimpleResponse(c, "TransactionDemo err")
 		return
 	}
 
 	err = user.Create(&tx)
 	if err != nil {
 		log.Errorf("user.Create err: %s", err.Error())
-		gocom.SendSimpleResponse(c, "Transaction err")
+		gocom.SendSimpleResponse(c, "TransactionDemo err")
 		return
 	}
 
-	gocom.SendSimpleResponse(c, "Transaction Success")
+	gocom.SendSimpleResponse(c, "TransactionDemo Success")
 }

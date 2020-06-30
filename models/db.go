@@ -51,7 +51,7 @@ func CreateTable() error {
 		return err
 	}
 
-	tComment := Comment{}
+	tComment := TComment{}
 	if err = tComment.CreateTable(GDB); err != nil {
 		return err
 	}
@@ -76,8 +76,8 @@ func CreateTable() error {
 
 // 实现Mysql的Replace，obj为gorm对象的引用，keyFieldNames为gorm对象结构里面的字段
 // notice := Notice{Title: "test", AdminId: 1}
-// err = Replace(nil, TableNotice, &notice, "Title", "AdminId")
-func Replace(db *LocalDB, tableName string, obj interface{}, keyFieldNames ...string) error {
+// err = Replace(nil, &notice, "Title", "AdminId")
+func Replace(db *LocalDB, obj interface{}, keyFieldNames ...string) error {
 	if db == nil {
 		db = GDB
 	}
@@ -87,7 +87,7 @@ func Replace(db *LocalDB, tableName string, obj interface{}, keyFieldNames ...st
 		return fmt.Errorf("obj must be Ptr")
 	}
 
-	if typeOfObj.Elem().Kind()  != reflect.Struct {
+	if typeOfObj.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("obj elem must be struct")
 	}
 
@@ -114,11 +114,32 @@ func Replace(db *LocalDB, tableName string, obj interface{}, keyFieldNames ...st
 		values = append(values, reflect.ValueOf(obj).Elem().Field(structField.Index[0]).Interface())
 	}
 
+	var err error
+	tx := db.Begin().Table(gorm.ToTableName(typeOfObj.Elem().Name()))
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	values[0] = where
-	err := db.Table(tableName).FirstOrCreate(obj, values...).Error
-	if err != nil {
-		return err
+	tmp := reflect.New(typeOfObj.Elem())
+	sdb := tx.First(&tmp, values...)
+	err = sdb.Error
+	if err == nil && sdb.RowsAffected > 0 {
+		// update
+		err = tx.Where(where, values[1:]...).Update(obj).Error
 	}
 
-	return nil
+	if gorm.IsRecordNotFoundError(err) {
+		// insert
+		err = tx.Create(obj).Error
+	}
+
+	if err != nil {
+		return err
+	} else {
+		tx.Commit()
+		return nil
+	}
 }

@@ -4,22 +4,18 @@ import (
 	"time"
 )
 
-type Comment struct {
-	ID              int64     `gorm:"primary_key" json:"id"`
-	Content         string    `gorm:"not null;type:varchar(256);unique_index:idx_comment" json:"content"`
-	Pics            string    `gorm:"not null;type:varchar(1024);unique_index:idx_comment" json:"pics"`
-	CreatedAt       time.Time `json:"created_at"`
+type TComment struct {
+	ID          int64     `gorm:"primary_key" json:"id"`
+	Commentator int64     `gorm:"not null;unique_index:idx_comment" json:"commentator"`
+	FeedId      int64     `gorm:"not null;unique_index:idx_comment" json:"feed_id"`
+	Content     string    `gorm:"not null;type:varchar(256);" json:"content"`
+	Pics        string    `gorm:"not null;type:varchar(1024);" json:"pics"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
-const TableComment = "t_comment"
-
-func (obj *Comment) TableName() string {
-	return TableComment
-}
-
-func (obj *Comment) CreateTable(db *LocalDB) error {
+func (obj *TComment) CreateTable(db *LocalDB) error {
 	if !db.HasTable(obj) {
-		if err := db.Table(obj.TableName()).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
+		if err := db.Model(obj).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
 			return err
 		}
 	}
@@ -27,11 +23,10 @@ func (obj *Comment) CreateTable(db *LocalDB) error {
 	return nil
 }
 
-func (obj *Comment) Create(db *LocalDB) error {
+func (obj *TComment) Create(db *LocalDB) error {
 	if db == nil {
 		db = GDB
 	}
 
-	return db.Table(obj.TableName()).Create(obj).Error
+	return db.Model(obj).Create(obj).Error
 }
-
