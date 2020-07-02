@@ -10,7 +10,6 @@ import (
 	"go-svr-template/io"
 	"go-svr-template/models"
 	"net/http"
-	"time"
 )
 
 func ApiDecodePhoneNumber(c *gin.Context) {
@@ -19,7 +18,8 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 		return
 	}
 
-	upWX, err := models.GetUserWXWithUserId(nil, userId)
+	userWX := models.TUserWX{UserId: userId}
+	err = models.FindFirst(nil, &userWX, "UserId")
 	if err != nil {
 		log.Errorf("cant get user profile: %d", userId)
 		io.SendResponse(c, "", io.ErrCodeDBErr)
@@ -41,11 +41,14 @@ func ApiDecodePhoneNumber(c *gin.Context) {
 
 	log.Infof("ApiDecodePhoneNumber: %+v", ts)
 
-	pc := tools.WxBizDataCrypt{AppID: controller.WXAppId, SessionKey: upWX.WXSessionKey}
+	pc := tools.WxBizDataCrypt{AppID: controller.WXAppId, SessionKey: userWX.WXSessionKey}
 	result, err := pc.Decrypt(ts.EncryptedData, ts.Iv, false)
 	if err == nil {
 		mobileNumber := result.(map[string]interface{})["purePhoneNumber"].(string)
-		if err = models.UpdateUserByUserId(nil, userId, map[string]interface{}{"mobile_number": mobileNumber, "mobile_verified": 1, "mobile_verify_time": time.Now()}); err != nil {
+
+		user := models.TUser{ID: userId}
+		paras := map[string]interface{}{"MobileNumber": mobileNumber}
+		if err = models.Update(nil, &user, paras, "ID"); err != nil {
 			log.Errorf("UpdateUserByUserId Err: %s, userId: %d", err.Error(), userId)
 			io.SendResponse(c, "", io.ErrCodeDBErr)
 			return

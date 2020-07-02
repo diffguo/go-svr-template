@@ -30,7 +30,7 @@ func CheckAndExecCmd() bool /*true: find a cmd; false: no cmd*/ {
 
 func ExecCreateTableCmd() {
 	fmt.Println("Start Create Tables! ")
-	if err := models.CreateTable(); err != nil {
+	if err := models.CreateTables(); err != nil {
 		fmt.Printf("Create Table Fail: %s\n", err.Error())
 	} else {
 		fmt.Printf("Create Table Succ\n")

@@ -68,16 +68,16 @@ func TransactionDemo(c *gin.Context) {
 	}()
 
 	comment := models.TComment{Content: "t1"}
-	user := models.User{Name: "testName"}
+	user := models.TUser{Name: "testName"}
 
-	err = comment.Create(&tx)
+	err = models.Create(&tx, &comment)
 	if err != nil {
 		log.Errorf("comment.Create err: %s", err.Error())
 		gocom.SendSimpleResponse(c, "TransactionDemo err")
 		return
 	}
 
-	err = user.Create(&tx)
+	err = models.Create(&tx, &user)
 	if err != nil {
 		log.Errorf("user.Create err: %s", err.Error())
 		gocom.SendSimpleResponse(c, "TransactionDemo err")

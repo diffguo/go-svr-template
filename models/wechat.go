@@ -1,10 +1,13 @@
 package models
 
 import (
+	"github.com/diffguo/gocom/log"
+	"github.com/jinzhu/gorm"
+	"reflect"
 	"time"
 )
 
-type WeChatAccessToken struct {
+type TWeChatAccessToken struct {
 	ID          int64     `json:"id"`
 	AppId       string    `gorm:"not null;type:varchar(36);unique" json:"app_id"`
 	AccessToken string    `gorm:"type:varchar(255)" json:"access_token"`
@@ -12,29 +15,35 @@ type WeChatAccessToken struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-func (obj *WeChatAccessToken) TableName() string {
-	return "we_chat_access_token"
-}
+var GlobalTWeChatAccessToken = TWeChatAccessToken{}
+var gTWeChatAccessTokenFieldMap = make(map[string]*gorm.Field) // 存放表结构中Field原始名对应Field结构的map
 
-func (obj *WeChatAccessToken) CreateTable(db *LocalDB) error {
-	if !db.Table(obj.TableName()).HasTable(obj) {
-		if err := db.Table(obj.TableName()).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
-			return err
+func init() {
+	typeOfObj := reflect.TypeOf(GlobalTWeChatAccessToken)
+	scope := gorm.Scope{Value: GlobalTWeChatAccessToken}
+	for i := 0; i < typeOfObj.NumField(); i++ {
+		field, ok := scope.FieldByName(typeOfObj.Field(i).Name)
+		if ok {
+			gTWeChatAccessTokenFieldMap[typeOfObj.Field(i).Name] = field
+		} else {
+			log.Errorf("scope.FieldByName err, name: %s", typeOfObj.Field(i).Name)
 		}
 	}
-
-	return nil
 }
 
-func (obj *WeChatAccessToken) FirstOrCreate(appID string) error {
+func (obj *TWeChatAccessToken) GetFieldMap() map[string]*gorm.Field {
+	return gTWeChatAccessTokenFieldMap
+}
+
+func (obj *TWeChatAccessToken) FirstOrCreate(db *LocalDB, appID string) error {
 	obj.ExpireAT = time.Now()
 	obj.CreatedAt = time.Now()
 
-	return GDB.Table(obj.TableName()).FirstOrCreate(obj, map[string]interface{}{"app_id": appID}).Error
+	return db.Model(obj).FirstOrCreate(obj, map[string]interface{}{gTWeChatAccessTokenFieldMap["AppId"].DBName: appID}).Error
 }
 
-func (obj *WeChatAccessToken) Update(accessToken string, expireAT time.Time) error {
-	return GDB.Table(obj.TableName()).Where("id = ?", obj.ID).Update(map[string]interface{}{
-		"access_token": accessToken,
-		"expire_at":    expireAT}).Error
+func (obj *TWeChatAccessToken) Update(db *LocalDB, accessToken string, expireAT time.Time) error {
+	return Update(db, obj, map[string]interface{}{
+		"AccessToken": accessToken,
+		"ExpireAT":    expireAT}, "ID")
 }

@@ -32,18 +32,19 @@ func ApiLogin(c *gin.Context) {
 	}
 
 	passWord := controller.Hmac4Password(is.Password)
-	up, err := models.GetUserByPassword(nil, is.MobileNumber, passWord)
+	user := models.TUser{MobileNumber: is.MobileNumber, Password: passWord}
+	err := models.FindFirst(nil, &user, "MobileNumber", "Password")
 	if err != nil {
 		log.Errorf("db err: %s", err.Error())
 		io.SendResponse(c, "", io.ErrCodeDBErr)
 		return
 	}
 
-	err = gocom.GenAuth(c, up.ID)
+	err = gocom.GenAuth(c, user.ID)
 	if err != nil {
 		gocom.SendResponseImp(c, "", io.ErrCodeLogicErr, "GenAuth Error")
 		return
 	}
 
-	gocom.SendSimpleResponse(c, up)
+	gocom.SendSimpleResponse(c, user)
 }

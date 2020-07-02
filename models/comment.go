@@ -1,6 +1,9 @@
 package models
 
 import (
+	"github.com/diffguo/gocom/log"
+	"github.com/jinzhu/gorm"
+	"reflect"
 	"time"
 )
 
@@ -13,20 +16,22 @@ type TComment struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-func (obj *TComment) CreateTable(db *LocalDB) error {
-	if !db.HasTable(obj) {
-		if err := db.Model(obj).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
-			return err
+var GlobalTComment = TComment{}
+var gTCommentFieldMap = make(map[string]*gorm.Field) // 存放表结构中Field原始名对应Field结构的map
+
+func init() {
+	typeOfObj := reflect.TypeOf(GlobalTComment)
+	scope := gorm.Scope{Value: GlobalTComment}
+	for i := 0; i < typeOfObj.NumField(); i++ {
+		field, ok := scope.FieldByName(typeOfObj.Field(i).Name)
+		if ok {
+			gTCommentFieldMap[typeOfObj.Field(i).Name] = field
+		} else {
+			log.Errorf("scope.FieldByName err, name: %s", typeOfObj.Field(i).Name)
 		}
 	}
-
-	return nil
 }
 
-func (obj *TComment) Create(db *LocalDB) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Model(obj).Create(obj).Error
+func (obj *TComment) GetFieldMap() map[string]*gorm.Field {
+	return gTCommentFieldMap
 }

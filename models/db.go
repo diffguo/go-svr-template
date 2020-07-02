@@ -12,6 +12,10 @@ type LocalDB struct {
 	*gorm.DB
 }
 
+type FieldMapInterface interface {
+	GetFieldMap() map[string]*gorm.Field
+}
+
 var GDB *LocalDB
 
 func InitGormDbPool(config *gocom.MysqlConfig, setLog bool) (*LocalDB, error) {
@@ -38,36 +42,30 @@ func InitGormDbPool(config *gocom.MysqlConfig, setLog bool) (*LocalDB, error) {
 	return GDB, nil
 }
 
-func CreateTable() error {
+func CreateTables() error {
 	var err error
 
-	tUser := &User{}
-	if err = tUser.CreateTable(GDB); err != nil {
+	if err = CreateTable(GDB, GlobalTUser); err != nil {
 		return err
 	}
 
-	tUserWX := UserWX{}
-	if err = tUserWX.CreateTable(GDB); err != nil {
+	if err = CreateTable(GDB, GlobalTUserWX); err != nil {
 		return err
 	}
 
-	tComment := TComment{}
-	if err = tComment.CreateTable(GDB); err != nil {
+	if err = CreateTable(GDB, GlobalTUserWXBind); err != nil {
 		return err
 	}
 
-	tUserWXBind := UserWXBind{}
-	if err = tUserWXBind.CreateTable(GDB); err != nil {
+	if err = CreateTable(GDB, GlobalTComment); err != nil {
 		return err
 	}
 
-	tWeChatAccessToken := WeChatAccessToken{}
-	if err = tWeChatAccessToken.CreateTable(GDB); err != nil {
+	if err = CreateTable(GDB, GlobalTWeChatAccessToken); err != nil {
 		return err
 	}
 
-	tNotice := Notice{}
-	if err = tNotice.CreateTable(GDB); err != nil {
+	if err = CreateTable(GDB, GlobalTNotice); err != nil {
 		return err
 	}
 
@@ -142,4 +140,120 @@ func Replace(db *LocalDB, obj interface{}, keyFieldNames ...string) error {
 		tx.Commit()
 		return nil
 	}
+}
+
+func prepareWhere(obj interface{}, keyFieldName ...string) ([]interface{}, error) {
+	var where string
+	var m = obj.(FieldMapInterface).GetFieldMap()
+	var whereWithValue = []interface{}{""}
+	for _, fieldName := range keyFieldName {
+		field, ok := m[fieldName]
+		if ok {
+			if where == "" {
+				where = fmt.Sprintf("%s = ?", field.DBName)
+			} else {
+				where = where + fmt.Sprintf(" and %s = ?", field.DBName)
+			}
+		} else {
+			return nil, fmt.Errorf("%s not in gMapStructField", keyFieldName)
+		}
+
+		whereWithValue = append(whereWithValue, reflect.ValueOf(obj).Elem().FieldByName(fieldName).Interface())
+	}
+
+	whereWithValue[0] = where
+	return whereWithValue, nil
+}
+
+func CreateTable(db *LocalDB, obj interface{}) error {
+	if !db.HasTable(obj) {
+		if err := db.Model(obj).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func Create(db *LocalDB, obj interface{}) error {
+	if db == nil {
+		db = GDB
+	}
+
+	return db.Model(obj).Create(obj).Error
+}
+
+func FindFirst(db *LocalDB, obj interface{}, keyFieldName ...string) error {
+	if db == nil {
+		db = GDB
+	}
+
+	where, err := prepareWhere(obj, keyFieldName...)
+	if err != nil {
+		return err
+	}
+
+	return db.Model(obj).First(obj, where...).Error
+}
+
+func FindRows(db *LocalDB, obj interface{}, keyFieldName ...string) (ret []TComment, err error) {
+	if db == nil {
+		db = GDB
+	}
+
+	where, err := prepareWhere(obj, keyFieldName...)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Model(obj).Find(&ret, where...).Error
+	return
+}
+
+// 请使用 GlobalTableObj.FindByList(), 这样不用生成小对象
+func FindByList(db *LocalDB, obj interface{}, keyFieldName string, values interface{}) (ret []TComment, err error) {
+	if db == nil {
+		db = GDB
+	}
+
+	if reflect.TypeOf(values).Kind() != reflect.Slice {
+		return nil, fmt.Errorf("values must bu slice")
+	}
+
+	pre := fmt.Sprintf("%s in (?)", keyFieldName)
+
+	var where = []interface{}{pre}
+	where = append(where, reflect.ValueOf(values).Interface())
+
+	err = db.Model(obj).Find(&ret, where...).Error
+	return
+}
+
+func Update(db *LocalDB, obj interface{}, paras map[string]interface{}, keyFieldName ...string) error {
+	if db == nil {
+		db = GDB
+	}
+
+	fieldMap := obj.(FieldMapInterface).GetFieldMap()
+
+	tmpMap := map[string]interface{}{}
+	for k, v := range paras {
+		field, ok := fieldMap[k]
+		if ok {
+			tmpMap[field.DBName] = v
+		} else {
+			return fmt.Errorf("%s not in gMapStructField", k)
+		}
+	}
+
+	if len(keyFieldName) == 0 {
+		return db.Model(obj).Updates(paras).Error
+	}
+
+	where, err := prepareWhere(obj, keyFieldName...)
+	if err != nil {
+		return err
+	}
+
+	return db.Model(obj).Where(where[0], where[1:]...).Updates(tmpMap).Error
 }

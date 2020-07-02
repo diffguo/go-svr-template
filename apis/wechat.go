@@ -62,8 +62,8 @@ func (r WeChatPublicServer) GetWxTokenDo(oldToken string) (rsp GetWxTokenRsp) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	var err error
-	token := models.WeChatAccessToken{}
-	err = token.FirstOrCreate(r.AppId)
+	token := models.TWeChatAccessToken{}
+	err = token.FirstOrCreate(nil, r.AppId)
 	if err == nil {
 		if token.ExpireAT.Unix() > time.Now().Unix() {
 			if oldToken == "" || oldToken != token.AccessToken {
@@ -95,7 +95,7 @@ func (r WeChatPublicServer) GetWxTokenDo(oldToken string) (rsp GetWxTokenRsp) {
 			if err == nil {
 				if rsp.ErrCode == 0 {
 					rsp.ExpiresIn = rsp.ExpiresIn - 5*60
-					token.Update(rsp.AccessToken, time.Unix(time.Now().Unix()+int64(rsp.ExpiresIn), 0))
+					token.Update(nil, rsp.AccessToken, time.Unix(time.Now().Unix()+int64(rsp.ExpiresIn), 0))
 					return
 				}
 

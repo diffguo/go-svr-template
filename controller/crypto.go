@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-const HmacKey = "973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba98763b"
+const HmacKey = "973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba98763c"
 
 func Hmac4Password(password string) string {
 	h := hmac.New(sha256.New, []byte(HmacKey))

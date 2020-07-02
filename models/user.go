@@ -3,11 +3,12 @@ package models
 import (
 	"github.com/diffguo/gocom/log"
 	"github.com/jinzhu/gorm"
+	"reflect"
 	"time"
 )
 
 /***************************************************Table User*************************************************************/
-type User struct {
+type TUser struct {
 	ID           int64      `json:"id"`
 	Name         string     `gorm:"not null;type:varchar(32)" json:"name"`
 	Avatar       string     `gorm:"not null;type:varchar(128)" json:"avatar"`
@@ -17,104 +18,32 @@ type User struct {
 	RawPass      string     `gorm:"-" json:"raw_pass"` // 客户端传来的密码, 创建时上传
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
-	DeletedAt    *time.Time `json:"-" json:"deleted_at"`
+	DeletedAt    *time.Time `json:"deleted_at"`
 }
 
-const TableUser = "t_user"
+var GlobalTUser = TUser{}
+var gTUserFieldMap = make(map[string]*gorm.Field) // 存放表结构中Field原始名对应Field结构的map
 
-func (obj *User) TableName() string {
-	return TableUser
-}
-
-func (obj *User) CreateTable(db *LocalDB) error {
-	if !db.HasTable(obj) {
-		if err := db.Table(obj.TableName()).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
-			return err
+func init() {
+	typeOfObj := reflect.TypeOf(GlobalTUser)
+	scope := gorm.Scope{Value: GlobalTUser}
+	for i := 0; i < typeOfObj.NumField(); i++ {
+		field, ok := scope.FieldByName(typeOfObj.Field(i).Name)
+		if ok {
+			gTUserFieldMap[typeOfObj.Field(i).Name] = field
+		} else {
+			log.Errorf("scope.FieldByName err, name: %s", typeOfObj.Field(i).Name)
 		}
 	}
-
-	return nil
 }
 
-func (obj *User) Create(db *LocalDB) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(obj.TableName()).Create(obj).Error
-}
-
-func GetUserByPassword(db *LocalDB, mobileNumber string, password string) (*User, error) {
-	if db == nil {
-		db = GDB
-	}
-
-	var user User
-	err := db.Table(TableUser).Where("mobile_number = ? and password = ?", mobileNumber, password).First(&user).Error
-	return &user, err
-}
-
-func GetUserByUserId(db *LocalDB, userId int64) (*User, error) {
-	if db == nil {
-		db = GDB
-	}
-
-	var user User
-	err := db.Table(TableUser).Where("id = ?", userId).First(&user).Error
-	if err != nil {
-		log.Error("GetUserByUserId err: ", err.Error())
-		return nil, err
-	}
-
-	return &user, err
-}
-
-func GetUserByUserIds(db *LocalDB, userIds []int64) ([]User, error) {
-	if db == nil {
-		db = GDB
-	}
-
-	var ret []User
-	err := db.Table(TableUser).Where("id in (?)", userIds).Find(&ret).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return ret, err
-}
-
-func UpdateUserByUserId(db *LocalDB, userId int64, updateData map[string]interface{}) error {
-	if db == nil {
-		db = GDB
-	}
-
-	ret := db.Table(TableUser).Where("id = ?", userId)
-	err := ret.Updates(updateData).Error
-
-	return err
-}
-
-func GetUserByMobileNum(db *LocalDB, mobileNumber string) (*User, error) {
-	if db == nil {
-		db = GDB
-	}
-
-	var user User
-	err := db.Table(TableUser).Where("mobile_number = ?", mobileNumber).First(&user).Error
-	if err != nil {
-		if err != gorm.ErrRecordNotFound {
-			log.Error("GetUserByMobileNum err: ", err.Error())
-		}
-
-		return nil, err
-	}
-
-	return &user, err
+func (obj *TUser) GetFieldMap() map[string]*gorm.Field {
+	return gTUserFieldMap
 }
 
 /***************************************************Table UserWX*************************************************************/
 
-type UserWX struct {
+type TUserWX struct {
 	ID           int64      `json:"id"`
 	UserId       int64      `json:"user_id"`
 	WxOpenId     string     `gorm:"not null;type:varchar(32);unique_index:idx_openid_app_id" json:"-"` // 小程序里的用户ID
@@ -134,79 +63,29 @@ type UserWX struct {
 	DeletedAt    *time.Time `json:"-"`
 }
 
-const TableWX = "t_user_wx"
+var GlobalTUserWX = TUserWX{}
+var gTUserWXFieldMap = make(map[string]*gorm.Field) // 存放表结构中Field原始名对应Field结构的map
 
-func (obj *UserWX) TableName() string {
-	return TableWX
-}
-
-func (obj *UserWX) CreateTable(db *LocalDB) error {
-	if !db.HasTable(obj) {
-		if err := db.Table(obj.TableName()).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
-			return err
+func init() {
+	typeOfObj := reflect.TypeOf(GlobalTUserWX)
+	scope := gorm.Scope{Value: GlobalTUserWX}
+	for i := 0; i < typeOfObj.NumField(); i++ {
+		field, ok := scope.FieldByName(typeOfObj.Field(i).Name)
+		if ok {
+			gTUserWXFieldMap[typeOfObj.Field(i).Name] = field
+		} else {
+			log.Errorf("scope.FieldByName err, name: %s", typeOfObj.Field(i).Name)
 		}
 	}
-
-	return nil
 }
 
-func (obj *UserWX) Create(db *LocalDB) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(obj.TableName()).Create(obj).Error
-}
-
-func GetUserWXWithUserWXId(db *LocalDB, userWXId int64) (*UserWX, error) {
-	if db == nil {
-		db = GDB
-	}
-
-	var up UserWX
-	err := db.Table(TableWX).Where("id = ?", userWXId).First(&up).Error
-	return &up, err
-}
-
-func GetUserWXWithUserId(db *LocalDB, userId int64) (*UserWX, error) {
-	if db == nil {
-		db = GDB
-	}
-
-	var up UserWX
-	err := db.Table(TableWX).Where("user_id = ?", userId).First(&up).Error
-	return &up, err
-}
-
-func GetUserWXWithOpenId(db *LocalDB, openId string, appId int) (*UserWX, error) {
-	if db == nil {
-		db = GDB
-	}
-
-	var up UserWX
-	err := db.Table(TableWX).Where("wx_open_id = ? and wx_app_id = ?", openId, appId).First(&up).Error
-	return &up, err
-}
-
-func UpdateUserWXSessionKey(db *LocalDB, userWXId int64, sessionKey string) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(TableWX).Where("id = ?", userWXId).Updates(map[string]interface{}{"wx_session_key": sessionKey}).Error
-}
-
-func UpdateUserWXByUserWXId(db *LocalDB, userWXId int64, updateData map[string]interface{}) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(TableWX).Where("id = ?", userWXId).Updates(updateData).Error
+func (obj *TUserWX) GetFieldMap() map[string]*gorm.Field {
+	return gTUserWXFieldMap
 }
 
 /***************************************************Table Bind*************************************************************/
 
-type UserWXBind struct {
+type TUserWXBind struct {
 	ID                      int64      `json:"id"`
 	UserId                  int64      `json:"user_id"`
 	MiniProOpenID           string     `gorm:"not null;type:varchar(32);" json:"mini_pro_open_id"` // 小程序OpendId
@@ -216,34 +95,22 @@ type UserWXBind struct {
 	DeletedAt               *time.Time `json:"-"`
 }
 
-const TableWXOpenIdBind = "t_user_wx_bind"
+var GlobalTUserWXBind = TUserWXBind{}
+var gTUserWXBindFieldMap = make(map[string]*gorm.Field) // 存放表结构中Field原始名对应Field结构的map
 
-func (obj *UserWXBind) TableName() string {
-	return TableWXOpenIdBind
-}
-
-func (obj *UserWXBind) CreateTable(db *LocalDB) error {
-	if !db.HasTable(obj) {
-		if err := db.Table(obj.TableName()).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
-			return err
+func init() {
+	typeOfObj := reflect.TypeOf(GlobalTUserWXBind)
+	scope := gorm.Scope{Value: GlobalTUserWXBind}
+	for i := 0; i < typeOfObj.NumField(); i++ {
+		field, ok := scope.FieldByName(typeOfObj.Field(i).Name)
+		if ok {
+			gTUserWXFieldMap[typeOfObj.Field(i).Name] = field
+		} else {
+			log.Errorf("scope.FieldByName err, name: %s", typeOfObj.Field(i).Name)
 		}
 	}
-
-	return nil
 }
 
-func (obj *UserWXBind) Create(db *LocalDB) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(obj.TableName()).Create(obj).Error
-}
-
-func (obj *UserWXBind) Save(db *LocalDB) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(obj.TableName()).Save(obj).Error
+func (obj *TUserWXBind) GetFieldMap() map[string]*gorm.Field {
+	return gTUserWXBindFieldMap
 }

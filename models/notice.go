@@ -1,8 +1,13 @@
 package models
 
-import "time"
+import (
+	"github.com/diffguo/gocom/log"
+	"github.com/jinzhu/gorm"
+	"reflect"
+	"time"
+)
 
-type Notice struct {
+type TNotice struct {
 	Id        int       `gorm:"primary_key"`
 	Title     string    `gorm:"type:varchar(20);not null"`
 	Content   string    `gorm:"type:text;not null"`
@@ -11,36 +16,22 @@ type Notice struct {
 	AdminId   int       `gorm:"not null"`
 }
 
-const TableNotice = "t_notice"
+var GlobalTNotice = TNotice{}
+var gTNoticeFieldMap = make(map[string]*gorm.Field) // 存放表结构中Field原始名对应Field结构的map
 
-func (obj *Notice) TableName() string {
-	return TableNotice
-}
-
-func (obj *Notice) CreateTable(db *LocalDB) error {
-	if !db.HasTable(obj) {
-		if err := db.Table(obj.TableName()).Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").CreateTable(obj).Error; err != nil {
-			return err
+func init() {
+	typeOfObj := reflect.TypeOf(GlobalTNotice)
+	scope := gorm.Scope{Value: GlobalTNotice}
+	for i := 0; i < typeOfObj.NumField(); i++ {
+		field, ok := scope.FieldByName(typeOfObj.Field(i).Name)
+		if ok {
+			gTNoticeFieldMap[typeOfObj.Field(i).Name] = field
+		} else {
+			log.Errorf("scope.FieldByName err, name: %s", typeOfObj.Field(i).Name)
 		}
 	}
-
-	return nil
 }
 
-func (obj *Notice) Create(db *LocalDB) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(obj.TableName()).Create(obj).Error
+func (obj *TNotice) GetFieldMap() map[string]*gorm.Field {
+	return gTNoticeFieldMap
 }
-
-func (obj *Notice) UpdateNotice(db *LocalDB, paras map[string]interface{}) error {
-	if db == nil {
-		db = GDB
-	}
-
-	return db.Table(obj.TableName()).Updates(paras).Error
-}
-
-

@@ -50,17 +50,50 @@ func initEnv() error {
 	return nil
 }
 
-func TestSomething( t *testing.T ) {
+func TestDB( t *testing.T ) {
 	err := initEnv()
 	if err != nil {
 		t.Fatal("init fail")
 	}
 
-	notice := &models.TComment{Commentator:1, FeedId: 1, Content: "c1"}
-	err = models.Replace(nil, notice, "Commentator", "FeedId")
+	// 插入或替换
+	notice0 := &models.TComment{Commentator:1, FeedId: 1, Content: "c1"}
+	err = models.Replace(nil, notice0, "Commentator", "FeedId")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(notice)
+	fmt.Printf("notice0: %+v\n", notice0)
+
+	// 查找单个
+	notice1 := &models.TComment{Commentator: 1, FeedId: 1}
+	err = models.FindFirst(nil, notice1, "Commentator", "FeedId")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Printf("notice1: %+v\n", notice1)
+
+	// 查找多个
+	notice2 := &models.TComment{Commentator: 1}
+	rows, err := models.FindRows(nil, notice2, "Commentator")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Printf("notice2: %+v\n", rows)
+
+	// 通过列表查找多个
+	rows2, err := models.FindByList(nil, &models.GlobalTComment,"Commentator", []int{1, 2, 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Printf("notice3: %+v\n", rows2)
+
+	notice3 := &models.TComment{Commentator: 1}
+	err = models.Update(nil, notice3, map[string]interface{}{"FeedId":1}, "Commentator", "FeedId")
+	if err != nil {
+		t.Fatal(err)
+	}
 }
