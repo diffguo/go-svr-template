@@ -79,7 +79,7 @@ func initConfig(confFilePath string) error {
 
 func initDB(env string) error {
 	dbConf := Config.MysqlSetting["MysqlInstance"]
-	_, err := models.InitGormDbPool(&dbConf, env != "online")
+	_, err := models.InitGormDbPool(&dbConf, env != GoEnvOnline)
 	if err != nil {
 		return err
 	}
@@ -105,22 +105,25 @@ func swaggerInfo() {
 var httpSvr *http.Server
 var ServerRunning = true
 
+const GoEnvOnline = "online"
+const GoEnvTest = "test"
+
 func main() {
-	var env = os.Getenv("GOENV")
-	if env == "" {
-		env = "online"
-	}
-
 	swaggerInfo()
-
-	env = strings.ToLower(env)
-	fmt.Printf("Start %s In %s Env\n", SERVERNAME, env)
 
 	err := initConfig("")
 	if nil != err {
 		fmt.Println("initConfig err :", err)
 		return
 	}
+
+	env := Config.Environment
+	if env == "" {
+		env = GoEnvTest
+	}
+
+	env = strings.ToLower(env)
+	fmt.Printf("Start %s In %s Env\n", SERVERNAME, env)
 
 	err = initDB(env)
 	if nil != err {
