@@ -86,7 +86,7 @@ func Replace(db *LocalDB, obj interface{}, keyFieldNames ...string) error {
 	}
 
 	if typeOfObj.Elem().Kind() != reflect.Struct {
-		return fmt.Errorf("obj elem must be struct")
+		return fmt.Errorf("obj's elem must be struct")
 	}
 
 	var where string
@@ -188,6 +188,11 @@ func FindFirst(db *LocalDB, obj interface{}, keyFieldName ...string) error {
 		db = GDB
 	}
 
+	typeOfObj := reflect.TypeOf(obj)
+	if typeOfObj.Kind() != reflect.Ptr {
+		return fmt.Errorf("obj must be ptr")
+	}
+
 	where, err := prepareWhere(obj, keyFieldName...)
 	if err != nil {
 		return err
@@ -196,28 +201,49 @@ func FindFirst(db *LocalDB, obj interface{}, keyFieldName ...string) error {
 	return db.Model(obj).First(obj, where...).Error
 }
 
-func FindRows(db *LocalDB, obj interface{}, keyFieldName ...string) (ret []TComment, err error) {
+func FindRows(db *LocalDB, obj interface{}, out interface{}, keyFieldName ...string) error {
 	if db == nil {
 		db = GDB
 	}
 
-	where, err := prepareWhere(obj, keyFieldName...)
-	if err != nil {
-		return nil, err
+	typeOfObj := reflect.TypeOf(obj)
+	if typeOfObj.Kind() != reflect.Ptr {
+		return fmt.Errorf("obj must be ptr")
 	}
 
-	err = db.Model(obj).Find(&ret, where...).Error
-	return
+	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+		return fmt.Errorf("out must bu Ptr")
+	}
+
+	if reflect.TypeOf(out).Elem().Kind() != reflect.Slice {
+		return fmt.Errorf("out's elem must bu slice")
+	}
+
+	where, err := prepareWhere(obj, keyFieldName...)
+	if err != nil {
+		return err
+	}
+
+	err = db.Table(gorm.ToTableName(typeOfObj.Elem().Name())).Find(out, where...).Error
+	return err
 }
 
 // 请使用 GlobalTableObj.FindByList(), 这样不用生成小对象
-func FindByList(db *LocalDB, obj interface{}, keyFieldName string, values interface{}) (ret []TComment, err error) {
+func FindByList(db *LocalDB, obj interface{}, keyFieldName string, values interface{}, out interface{}) error {
 	if db == nil {
 		db = GDB
 	}
 
 	if reflect.TypeOf(values).Kind() != reflect.Slice {
-		return nil, fmt.Errorf("values must bu slice")
+		return fmt.Errorf("values must bu slice")
+	}
+
+	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+		return fmt.Errorf("out must bu Ptr")
+	}
+
+	if reflect.TypeOf(out).Elem().Kind() != reflect.Slice {
+		return fmt.Errorf("out's elem must bu slice")
 	}
 
 	pre := fmt.Sprintf("%s in (?)", keyFieldName)
@@ -225,13 +251,17 @@ func FindByList(db *LocalDB, obj interface{}, keyFieldName string, values interf
 	var where = []interface{}{pre}
 	where = append(where, reflect.ValueOf(values).Interface())
 
-	err = db.Model(obj).Find(&ret, where...).Error
-	return
+	return db.Model(obj).Find(out, where...).Error
 }
 
 func Update(db *LocalDB, obj interface{}, paras map[string]interface{}, keyFieldName ...string) error {
 	if db == nil {
 		db = GDB
+	}
+
+	typeOfObj := reflect.TypeOf(obj)
+	if typeOfObj.Kind() != reflect.Ptr {
+		return fmt.Errorf("obj must be ptr")
 	}
 
 	fieldMap := obj.(FieldMapInterface).GetFieldMap()

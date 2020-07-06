@@ -76,20 +76,23 @@ func TestDB( t *testing.T ) {
 
 	// 查找多个
 	notice2 := &models.TComment{Commentator: 1}
-	rows, err := models.FindRows(nil, notice2, "Commentator")
+	var results []models.TComment
+	err = models.FindRows(nil, notice2, &results, "Commentator")
+	//err = models.FindRows(nil, notice2, &results)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Printf("notice2: %+v\n", rows)
+	fmt.Printf("notice2: %+v\n", results)
 
 	// 通过列表查找多个
-	rows2, err := models.FindByList(nil, &models.GlobalTComment,"Commentator", []int{1, 2, 3})
+	var results2 []models.TComment
+	err = models.FindByList(nil, &models.GlobalTComment,"Commentator", []int{1, 2, 3}, &results2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Printf("notice3: %+v\n", rows2)
+	fmt.Printf("notice3: %+v\n", results2)
 
 	notice3 := &models.TComment{Commentator: 1}
 	err = models.Update(nil, notice3, map[string]interface{}{"FeedId":1}, "Commentator", "FeedId")
