@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/diffguo/gocom/log"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"reflect"
 	"time"
@@ -27,7 +27,7 @@ func init() {
 		if ok {
 			gTNoticeFieldMap[typeOfObj.Field(i).Name] = field
 		} else {
-			log.Errorf("scope.FieldByName err, name: %s", typeOfObj.Field(i).Name)
+			fmt.Printf("scope.FieldByName err, name: %s\n", typeOfObj.Field(i).Name)
 		}
 	}
 }
