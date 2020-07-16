@@ -3,7 +3,7 @@
 ProjectName=""
 ProjectPath=""
 
-while getopts ":n:p" opt
+while getopts "n:p:" opt
 do
     case $opt in
     n)
@@ -27,6 +27,8 @@ echo "project name: $ProjectName"
 if [ -z "$ProjectPath" ]; then
     echo "use default project path: ./$ProjectName/"
     ProjectPath="./$ProjectName/"
+else
+    ProjectPath="$ProjectPath/$ProjectName/"
 fi
 
 echo "project path: $ProjectPath"
