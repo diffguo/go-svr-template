@@ -40,6 +40,8 @@ github.com/diffguo/gocom v0.0.0-20200629013215-8b9454b2b422 h1:J6S0ee1P5xuQgHN0k
 github.com/diffguo/gocom v0.0.0-20200629013215-8b9454b2b422/go.mod h1:gD84wvd9sUbN0KUDyffjnj+BgueQ+WCpfoc7VocDxbo=
 github.com/diffguo/gocom v0.0.0-20200629025723-e14a85991523 h1:gpvEtOOmuw0eHc4MR+CCznnMEe3MrdCWhC8hb2++py0=
 github.com/diffguo/gocom v0.0.0-20200629025723-e14a85991523/go.mod h1:gD84wvd9sUbN0KUDyffjnj+BgueQ+WCpfoc7VocDxbo=
+github.com/diffguo/gocom v0.0.0-20200720093812-85c55918e153 h1:9UA1zyaFC4Q/VYscTnOHm9eKbkt5TRDOyIV6pKw2Y48=
+github.com/diffguo/gocom v0.0.0-20200720093812-85c55918e153/go.mod h1:gD84wvd9sUbN0KUDyffjnj+BgueQ+WCpfoc7VocDxbo=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 h1:Yzb9+7DPaBjB8zlTR87/ElzFsnQfuHnVUVqpZZIcV5Y=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5/go.mod h1:a2zkGnVExMxdzMo3M0Hi/3sEU+cWnZpSni0O6/Yb/P0=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
