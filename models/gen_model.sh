@@ -22,7 +22,7 @@ type $ModelName struct {
 }
 
 var Global$ModelName = $ModelName{}
-var g$ModelNameFieldMap = make(map[string]*gorm.Field)
+var g${ModelName}FieldMap = make(map[string]*gorm.Field)
 
 func init() {
 	typeOfObj := reflect.TypeOf(Global$ModelName)
@@ -30,7 +30,7 @@ func init() {
 	for i := 0; i < typeOfObj.NumField(); i++ {
 		field, ok := scope.FieldByName(typeOfObj.Field(i).Name)
 		if ok {
-			g$ModelNameFieldMap[typeOfObj.Field(i).Name] = field
+			g${ModelName}FieldMap[typeOfObj.Field(i).Name] = field
 		} else {
 			fmt.Printf(\"scope.FieldByName err, name: %s\n\", typeOfObj.Field(i).Name)
 		}
@@ -38,5 +38,5 @@ func init() {
 }
 
 func (obj *$ModelName) GetFieldMap() map[string]*gorm.Field {
-	return g$ModelNameFieldMap
+	return g${ModelName}FieldMap
 }" > $ModelFileName.go
