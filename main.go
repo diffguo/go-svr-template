@@ -192,12 +192,19 @@ func main() {
 func HandleSignal(signals ...os.Signal) {
 	sig := make(chan os.Signal, 1)
 	if len(signals) == 0 {
-		signal.Notify(sig, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGURG)
 	}
 
+HandleSig:
 	signal.Notify(sig, signals...)
 
 	s := <-sig
+	fmt.Println("recv sig: ", s)
+
+	if s == syscall.SIGURG {
+		goto HandleSig
+	}
+
 	ServerRunning = false
 
 	log.Infof("io: graceful exit action from signal [%s]", s.String())
